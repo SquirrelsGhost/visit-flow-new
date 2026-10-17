@@ -1,0 +1,22 @@
+{
+  "name": "@visit-flow/shared",
+  "version": "2.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./api": "./src/api/apiResponse.ts",
+    "./roles": "./src/auth/roles.ts",
+    "./consent": "./src/consent/consent.ts",
+    "./consentSchema": "./src/consent/consentSchema.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "vitest": "^5.0.5"
+  }
+}

@@ -1,0 +1,33 @@
+{
+  "name": "visit-flow",
+  "version": "2.0.0",
+  "private": true,
+  "description": "visit-flow v2 – Monorepo mit Client (Vite, React, Capacitor), API (Express 5) und geteilten Typen",
+  "type": "module",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev:api": "npm run dev --workspace=@visit-flow/api",
+    "dev:client": "npm run dev --workspace=@visit-flow/client",
+    "lint": "eslint . --max-warnings=0",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present",
+    "build": "npm run build --workspaces --if-present",
+    "check": "npm run lint && npm run typecheck && npm run test",
+    "prepare": "husky"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.13.0",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "globals": "^17.13.0",
+    "husky": "^9.1.7",
+    "typescript": "~6.0.0",
+    "typescript-eslint": "^8.71.2"
+  }
+}
