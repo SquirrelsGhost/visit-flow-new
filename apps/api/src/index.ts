@@ -1,4 +1,5 @@
-import { createApp, createServices } from "./app";
+import { createApp } from "./app";
+import { createServices } from "./services";
 import { connectDatabase, disconnectDatabase } from "./config/db";
 import { loadEnv } from "./config/env";
 

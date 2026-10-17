@@ -4,24 +4,21 @@ import express, { type Express } from "express";
 import type { Env } from "./config/env";
 import { errorHandler, notFoundHandler } from "./lib/http/errorHandler";
 import { corsOptions, securityHeaders } from "./lib/http/security";
-import { consentLogModel } from "./modules/consent/ConsentLog.model";
-import { mongoConsentRepository } from "./modules/consent/ConsentRepository";
-import { ConsentService } from "./modules/consent/ConsentService";
+import type { AuthService } from "./modules/auth/AuthService";
+import { authRoutes } from "./modules/auth/auth.routes";
+import type { ConsentService } from "./modules/consent/ConsentService";
 import { consentRoutes } from "./modules/consent/consent.routes";
 import { healthRoutes } from "./modules/health/health.routes";
 
 export interface AppServices {
   consent: ConsentService;
+  auth: AuthService;
 }
 
-export function createServices(env: Env): AppServices {
-  return {
-    consent: new ConsentService(mongoConsentRepository(consentLogModel(env.CONSENT_LOG_DAYS))),
-  };
-}
+export type AppEnv = Pick<Env, "JWT_SECRET" | "CORS_ORIGINS" | "NODE_ENV">;
 
 /** Baut die Express-App. Hier wird nur zusammengesteckt: Middleware, Module, Fehlerbehandlung. */
-export function createApp(env: Pick<Env, "JWT_SECRET" | "CORS_ORIGINS">, services: AppServices): Express {
+export function createApp(env: AppEnv, services: AppServices): Express {
   const app = express();
   const deps = { jwtSecret: env.JWT_SECRET };
 
@@ -35,6 +32,7 @@ export function createApp(env: Pick<Env, "JWT_SECRET" | "CORS_ORIGINS">, service
 
   app.use("/api/health", healthRoutes(deps));
   app.use("/api/consent", consentRoutes(deps, services.consent));
+  app.use("/api/auth", authRoutes({ ...deps, secureCookies: env.NODE_ENV === "production" }, services.auth));
 
   app.use(notFoundHandler);
   app.use(errorHandler);
