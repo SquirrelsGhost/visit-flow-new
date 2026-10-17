@@ -5,8 +5,10 @@ import { createApp } from "../app";
 import type { ConsentLogDoc } from "../modules/consent/ConsentLog.model";
 import type { ConsentRepository } from "../modules/consent/ConsentRepository";
 import { ConsentService } from "../modules/consent/ConsentService";
+import { makeAuth } from "./support/authFakes";
 
-const env = { JWT_SECRET: "s".repeat(40), CORS_ORIGINS: ["http://localhost:5173"] };
+const env = { JWT_SECRET: "s".repeat(40), CORS_ORIGINS: ["http://localhost:5173"], NODE_ENV: "test" as const };
+const auth = makeAuth([]).service;
 
 function memoryRepository(): ConsentRepository & { rows: ConsentLogDoc[] } {
   const rows: ConsentLogDoc[] = [];
@@ -23,7 +25,7 @@ describe("POST /api/consent", () => {
 
   beforeEach(() => {
     repository = memoryRepository();
-    app = createApp(env, { consent: new ConsentService(repository) });
+    app = createApp(env, { consent: new ConsentService(repository), auth });
   });
 
   it("protokolliert ohne Login und ohne IP oder User-Agent", async () => {
@@ -54,7 +56,7 @@ describe("POST /api/consent", () => {
 });
 
 describe("App-Grundlagen", () => {
-  const app = createApp(env, { consent: new ConsentService(memoryRepository()) });
+  const app = createApp(env, { consent: new ConsentService(memoryRepository()), auth });
 
   it("antwortet bei unbekannten Pfaden mit err()", async () => {
     const response = await request(app).get("/api/gibt-es-nicht");

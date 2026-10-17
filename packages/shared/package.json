@@ -7,7 +7,8 @@
     "./api": "./src/api/apiResponse.ts",
     "./roles": "./src/auth/roles.ts",
     "./consent": "./src/consent/consent.ts",
-    "./consentSchema": "./src/consent/consentSchema.ts"
+    "./consentSchema": "./src/consent/consentSchema.ts",
+    "./auth": "./src/auth/authSchemas.ts"
   },
   "scripts": {
     "typecheck": "tsc -p tsconfig.json",

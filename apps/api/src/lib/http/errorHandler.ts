@@ -9,7 +9,7 @@ export const notFoundHandler: RequestHandler = (_req, res) => {
 /** Letzte Station für alle Fehler. Interne Details gehen ins Log, nie an den Client. */
 export const errorHandler: ErrorRequestHandler = (error: unknown, _req, res, _next) => {
   if (error instanceof HttpError) {
-    err(res, error.message, error.status, error.fields);
+    err(res, error.message, error.status, error.fields, error.extra);
     return;
   }
   if (error instanceof SyntaxError && "body" in error) {
