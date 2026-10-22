@@ -8,3 +8,8 @@ coverage/
 .DS_Store
 apps/client/android/
 apps/client/ios/
+.next/
+out/
+*.tsbuildinfo
+apps/web/android/
+apps/web/ios/

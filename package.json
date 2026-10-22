@@ -13,6 +13,7 @@
   },
   "scripts": {
     "dev:api": "npm run dev --workspace=@visit-flow/api",
+    "dev:web": "npm run dev --workspace=@visit-flow/web",
     "dev:client": "npm run dev --workspace=@visit-flow/client",
     "lint": "eslint . --max-warnings=0",
     "typecheck": "npm run typecheck --workspaces --if-present",

@@ -9,7 +9,9 @@
 ```
 apps/
   api/        Express 5 – REST, später Socket.io, Cron-Jobs. Läuft parallel zu v1 auf derselben MongoDB.
-  client/     Vite + React + Capacitor – ein Build für Web, Admin/Office, iOS und Android.
+  web/        Next.js 16 (App Router) + React + Capacitor – ein Build für Web, Admin/Office, iOS und Android.
+              Seiten in src/app/ setzen nur zusammen und liefern generateMetadata() über TranslationService.
+  client/     Alter Vite-Client, wird entfernt, sobald apps/web alles übernommen hat. Nichts Neues mehr hier.
 packages/
   shared/     Typen, Zod-Schemas, Rollen, API-Format. Von api und client importiert.
 ```
