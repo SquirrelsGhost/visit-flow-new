@@ -13,10 +13,11 @@ const MAX_LINES = 150;
 const MAX_LINES_AUSNAHMEN = [
   // Reine Text-/Übersetzungstabellen, keine Logik
   "**/texts/**/*.ts",
+  "**/translations/**/*.ts",
 ];
 
 export default tseslint.config(
-  { ignores: ["**/dist/**", "**/coverage/**", "**/node_modules/**", "apps/client/android/**", "apps/client/ios/**"] },
+  { ignores: ["**/dist/**", "**/coverage/**", "**/node_modules/**", "apps/client/android/**", "apps/client/ios/**", "**/.next/**", "**/out/**", "apps/web/android/**", "apps/web/ios/**", "**/next-env.d.ts"] },
   js.configs.recommended,
   ...tseslint.configs.recommended,
   {
@@ -32,15 +33,15 @@ export default tseslint.config(
   },
   { files: MAX_LINES_AUSNAHMEN, rules: { "max-lines": "off" } },
   {
-    files: ["apps/api/**/*.ts", "packages/**/*.ts", "*.{js,mjs,ts}"],
+    files: ["apps/api/**/*.ts", "packages/**/*.ts", "*.{js,mjs,ts}", "apps/web/*.ts"],
     languageOptions: { globals: globals.node },
   },
   {
-    files: ["apps/client/public/**/*.js"],
+    files: ["apps/client/public/**/*.js", "apps/web/public/**/*.js"],
     languageOptions: { globals: globals.browser },
   },
   {
-    files: ["apps/client/**/*.{ts,tsx}"],
+    files: ["apps/client/**/*.{ts,tsx}", "apps/web/**/*.{ts,tsx}"],
     languageOptions: { globals: globals.browser },
     plugins: { "react-hooks": reactHooks },
     rules: reactHooks.configs.recommended.rules,
