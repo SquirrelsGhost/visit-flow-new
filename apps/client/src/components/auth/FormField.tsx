@@ -1,11 +1,11 @@
-import { CheckCircle, Eye, EyeOff } from "lucide-react";
+import { CheckCircle } from "lucide-react";
 import { useState, type ReactNode, type Ref } from "react";
 import { cn } from "../../lib/cn";
 import { hapticFeedback } from "../../lib/device/haptics";
-import Button from "../ui/Button";
 import Input from "../ui/Input";
 import Label from "../ui/Label";
 import FieldMessage from "./FieldMessage";
+import PasswordToggle from "./PasswordToggle";
 
 interface FormFieldProps {
   id: string;
@@ -34,11 +34,31 @@ interface FormFieldProps {
   ref?: Ref<HTMLInputElement>;
 }
 
-/** Großes Formularfeld der Anmeldeseiten, Aussehen 1:1 aus v1. */
+/** Großes Formularfeld der Anmeldeseiten, Aussehen aus v1 mit weicherem Fokus-Leuchten. */
 export default function FormField({
-  id, label, type = "text", value, onChange, onBlur, onFocus, placeholder, error, isValid, required = false,
-  disabled = false, className, icon, showPasswordToggle = false, autoComplete, autoFocus, maxLength,
-  "data-testid": testId, enableHapticFeedback = true, showCharacterCount, helpText, ref,
+  id,
+  label,
+  type = "text",
+  value,
+  onChange,
+  onBlur,
+  onFocus,
+  placeholder,
+  error,
+  isValid,
+  required = false,
+  disabled = false,
+  className,
+  icon,
+  showPasswordToggle = false,
+  autoComplete,
+  autoFocus,
+  maxLength,
+  "data-testid": testId,
+  enableHapticFeedback = true,
+  showCharacterCount,
+  helpText,
+  ref,
 }: FormFieldProps) {
   const [showPassword, setShowPassword] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
@@ -60,7 +80,13 @@ export default function FormField({
       <div className="relative">
         {icon && (
           <div className="absolute left-5 top-1/2 -translate-y-1/2 z-10">
-            <div className={cn("transition-colors duration-200", hasError || isFocused ? "text-red-500 dark:text-red-400" : "text-muted-foreground")}>
+            <div
+              className={cn(
+                "transition-all duration-300",
+                hasError || isFocused ? "text-red-500 dark:text-red-400" : "text-muted-foreground",
+                isFocused && "scale-110",
+              )}
+            >
               {icon}
             </div>
           </div>
@@ -89,9 +115,9 @@ export default function FormField({
           aria-invalid={hasError || undefined}
           data-testid={testId}
           className={cn(
-            "h-16 text-lg bg-background border-2 rounded-xl transition-all duration-200",
+            "h-16 text-lg bg-background border-2 rounded-xl transition-[border-color,box-shadow,background-color] duration-300",
             "text-foreground placeholder:text-muted-foreground",
-            "focus-visible:ring-2 focus-visible:ring-red-500/20 dark:focus-visible:ring-red-500/30 focus-visible:outline-none",
+            "focus-visible:ring-4 focus-visible:ring-red-500/10 dark:focus-visible:ring-red-500/20 focus-visible:ring-offset-0 focus-visible:outline-none focus:bg-card hover:border-red-200 dark:hover:border-red-900/60",
             icon ? "pl-14" : "pl-6",
             showPasswordToggle || showValidIcon ? "pr-14" : "pr-6",
             hasError
@@ -106,29 +132,19 @@ export default function FormField({
         <div className="absolute right-5 top-1/2 -translate-y-1/2 flex items-center space-x-2">
           {showValidIcon && <CheckCircle className="h-5 w-5 text-green-500 dark:text-green-400" />}
           {showPasswordToggle && type === "password" && (
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              className="h-8 w-8 p-0 hover:bg-transparent dark:hover:bg-transparent"
-              onClick={() => {
+            <PasswordToggle
+              visible={showPassword}
+              disabled={disabled}
+              testId={testId}
+              onToggle={() => {
                 setShowPassword((current) => !current);
                 if (enableHapticFeedback) hapticFeedback("medium");
               }}
-              disabled={disabled}
-              tabIndex={-1}
-              data-testid={`${testId}-password-toggle`}
-            >
-              {showPassword ? (
-                <EyeOff className="h-4 w-4 text-muted-foreground hover:text-foreground transition-colors" />
-              ) : (
-                <Eye className="h-4 w-4 text-muted-foreground hover:text-foreground transition-colors" />
-              )}
-            </Button>
+            />
           )}
         </div>
       </div>
-      <FieldMessage error={error} helpText={helpText} value={value} maxLength={maxLength} showCharacterCount={showCharacterCount} />
+      <FieldMessage {...{ error, helpText, value, maxLength, showCharacterCount }} />
     </div>
   );
 }

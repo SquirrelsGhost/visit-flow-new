@@ -15,7 +15,11 @@ export default function FieldMessage({ error, helpText, value, maxLength, showCh
   return (
     <>
       {error && (
-        <div className="flex items-center space-x-2 text-red-600 dark:text-red-500 animate-fade-in" role="alert" aria-live="polite">
+        <div
+          className="flex items-center space-x-2 text-red-600 dark:text-red-500 animate-fade-in"
+          role="alert"
+          aria-live="polite"
+        >
           <AlertCircle className="h-4 w-4 flex-shrink-0" />
           <span className="text-sm font-medium">{error}</span>
         </div>

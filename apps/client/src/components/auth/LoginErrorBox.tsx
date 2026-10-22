@@ -1,13 +1,15 @@
 import { AlertCircle, ShieldOff, WifiOff } from "lucide-react";
+import { motion } from "motion/react";
 import { cn } from "../../lib/cn";
 import { loginErrorKind, type LoginErrorKind } from "../../lib/auth/loginErrorKind";
+import { SOFT_SPRING } from "../../lib/motion/presets";
 import { loginTexts } from "../../texts/loginTexts";
 
 interface LoginErrorBoxProps {
   message: string;
 }
 
-/** Farben je Fehlerart wie in v1: gesperrte IP lila, Rate Limit orange, Netzwerk gelb, sonst rot. */
+/** Klappt weich auf und schüttelt kurz bei jeder neuen Meldung. Farben je Fehlerart wie in v1: gesperrte IP lila, Rate Limit orange, Netzwerk gelb, sonst rot. */
 const STYLES: Record<LoginErrorKind, { box: string; badge: string; icon: string; title: string; text: string }> = {
   ipBlocked: {
     box: "bg-purple-50 dark:bg-purple-950/30 border-purple-300 dark:border-purple-900/50",
@@ -44,18 +46,27 @@ export default function LoginErrorBox({ message }: LoginErrorBoxProps) {
   const style = STYLES[kind];
   const Icon = kind === "ipBlocked" ? ShieldOff : kind === "network" ? WifiOff : AlertCircle;
   return (
-    <div
-      role="alert"
-      data-error-kind={kind}
-      className={cn("flex items-center space-x-3 p-4 rounded-xl border-2 animate-in slide-in-from-top-2 duration-300", style.box)}
+    <motion.div
+      initial={{ opacity: 0, height: 0, marginBottom: 0 }}
+      animate={{ opacity: 1, height: "auto", marginBottom: 24 }}
+      exit={{ opacity: 0, height: 0, marginBottom: 0 }}
+      transition={SOFT_SPRING}
+      className="overflow-hidden"
     >
-      <div className={cn("flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center", style.badge)}>
-        <Icon className={cn("h-5 w-5", style.icon)} />
+      <div
+        key={message}
+        role="alert"
+        data-error-kind={kind}
+        className={cn("flex items-center space-x-3 p-4 rounded-xl border-2 animate-shake", style.box)}
+      >
+        <div className={cn("flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center", style.badge)}>
+          <Icon className={cn("h-5 w-5", style.icon)} />
+        </div>
+        <div className="flex-1">
+          <p className={cn("text-sm font-semibold mb-0.5", style.title)}>{loginTexts.errorTitle[kind]}</p>
+          <p className={cn("text-sm", style.text)}>{message}</p>
+        </div>
       </div>
-      <div className="flex-1">
-        <p className={cn("text-sm font-semibold mb-0.5", style.title)}>{loginTexts.errorTitle[kind]}</p>
-        <p className={cn("text-sm", style.text)}>{message}</p>
-      </div>
-    </div>
+    </motion.div>
   );
 }

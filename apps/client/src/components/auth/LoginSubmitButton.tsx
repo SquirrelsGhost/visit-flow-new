@@ -12,12 +12,12 @@ const BUTTON_CLASSES = cn(
   "w-full h-14 text-lg font-semibold rounded-xl transition-all duration-200 shadow-lg dark:shadow-black/30",
   "bg-gradient-to-r from-red-600 to-red-700 dark:from-red-600 dark:to-red-700",
   "hover:from-red-700 hover:to-red-800 dark:hover:from-red-700 dark:hover:to-red-800",
-  "hover:scale-105 hover:shadow-xl dark:hover:shadow-black/50 touch-manipulation",
-  "disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100",
+  "hover:-translate-y-0.5 hover:shadow-xl hover:shadow-red-600/30 dark:hover:shadow-black/50 active:translate-y-0 active:scale-[0.98] touch-manipulation button-sheen",
+  "disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0 disabled:hover:shadow-lg",
   "text-white min-h-[44px]",
 );
 
-/** Roter Anmelde-Button mit Lade-Kreis und hüpfenden Punkten (v1 LoginForm). */
+/** Roter Anmelde-Button aus v1 mit Lade-Kreis und hüpfenden Punkten. Statt grobem Vergrößern hebt er sich leicht an, ein Glanz läuft durch. */
 export default function LoginSubmitButton({ busy, disabled, label, busyLabel }: LoginSubmitButtonProps) {
   return (
     <Button type="submit" className={BUTTON_CLASSES} disabled={disabled} data-testid="login-submit">

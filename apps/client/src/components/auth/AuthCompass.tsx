@@ -13,7 +13,12 @@ const SPIN: CSSProperties = { animation: "authSpin 20s linear infinite" };
 export default function AuthCompass() {
   const { qiblaMode, isCalculating, needleRotation, onCompassClick } = useQiblaCompass();
   const style: CSSProperties =
-    needleRotation === null ? SPIN : { transform: `rotate(${needleRotation}deg)`, transition: "transform 300ms ease-out" };
+    needleRotation === null
+      ? SPIN
+      : {
+          transform: `rotate(${needleRotation}deg)`,
+          transition: "transform 300ms ease-out",
+        };
 
   return (
     <div className="relative z-10 flex justify-center mb-6 max-[700px]:mb-2 mt-2 max-[700px]:mt-0">

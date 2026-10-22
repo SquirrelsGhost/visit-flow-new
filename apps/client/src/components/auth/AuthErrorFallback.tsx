@@ -34,7 +34,9 @@ export default function AuthErrorFallback({ error, onRetry }: AuthErrorFallbackP
         </CardHeader>
         <CardContent className="px-8 pt-6 pb-10 space-y-6">
           {import.meta.env.DEV && (
-            <p className="bg-red-50 border border-red-200 rounded-xl p-4 text-xs text-red-700 font-mono break-all">{error.message}</p>
+            <p className="bg-red-50 border border-red-200 rounded-xl p-4 text-xs text-red-700 font-mono break-all">
+              {error.message}
+            </p>
           )}
           <div className="text-center space-y-4">
             <p className="text-gray-700">{authErrorTexts.body}</p>
@@ -54,7 +56,11 @@ export default function AuthErrorFallback({ error, onRetry }: AuthErrorFallbackP
                 <RefreshCw className="mr-2 h-5 w-5" />
                 {authErrorTexts.reload}
               </Button>
-              <Button onClick={() => window.location.assign("/login")} variant="ghost" className={`${BIG_BUTTON} text-gray-600 hover:text-red-600`}>
+              <Button
+                onClick={() => window.location.assign("/login")}
+                variant="ghost"
+                className={`${BIG_BUTTON} text-gray-600 hover:text-red-600`}
+              >
                 <Home className="mr-2 h-5 w-5" />
                 {authErrorTexts.toLogin}
               </Button>

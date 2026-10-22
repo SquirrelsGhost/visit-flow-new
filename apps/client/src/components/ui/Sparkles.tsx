@@ -18,7 +18,15 @@ export default function Sparkles({ id, className, ...settings }: SparklesProps) 
   const generatedId = useId();
   const { background, minSize, maxSize, speed, particleColor, particleDensity } = settings;
   const options = useMemo(
-    () => sparklesOptions({ background, minSize, maxSize, speed, particleColor, particleDensity }),
+    () =>
+      sparklesOptions({
+        background,
+        minSize,
+        maxSize,
+        speed,
+        particleColor,
+        particleDensity,
+      }),
     [background, minSize, maxSize, speed, particleColor, particleDensity],
   );
 

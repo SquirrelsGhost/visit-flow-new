@@ -1,4 +1,6 @@
+import { motion } from "motion/react";
 import { useTranslation } from "../../hooks/useTranslation";
+import { riseIn } from "../../lib/motion/presets";
 import CardHeader from "../ui/CardHeader";
 import CardTitle from "../ui/CardTitle";
 import Sparkles from "../ui/Sparkles";
@@ -6,7 +8,7 @@ import AuthCompass from "./AuthCompass";
 
 const BEAM = "absolute top-0 bg-gradient-to-r from-transparent to-transparent mx-auto";
 
-/** Kopf der Login-Karte: Funkeln, Kompass, roter Titel mit Lichtstrahl (1:1 aus v1). */
+/** Kopf der Login-Karte: Funkeln, Kompass, roter Titel mit Lichtstrahl (aus v1), erscheint nacheinander. */
 export default function AuthHeader() {
   const { t } = useTranslation();
   return (
@@ -24,10 +26,12 @@ export default function AuthHeader() {
         />
       </div>
 
-      <AuthCompass />
+      <motion.div variants={riseIn}>
+        <AuthCompass />
+      </motion.div>
 
-      <div className="relative z-10 mb-3 max-[700px]:mb-1">
-        <CardTitle className="text-5xl sm:text-6xl max-[700px]:text-3xl font-bold bg-gradient-to-r from-red-600 via-red-700 to-red-800 dark:from-red-500 dark:via-red-600 dark:to-red-700 bg-clip-text text-transparent tracking-tight">
+      <motion.div variants={riseIn} className="relative z-10 mb-3 max-[700px]:mb-1">
+        <CardTitle className="text-5xl sm:text-6xl max-[700px]:text-3xl font-bold text-sheen tracking-tight">
           {t("app.title")}
         </CardTitle>
 
@@ -42,15 +46,16 @@ export default function AuthHeader() {
             minSize={0.4}
             maxSize={1}
             particleDensity={600}
-            className="w-full h-full"
+            className="w-full h-full [mask-image:radial-gradient(250px_100px_at_top,white_20%,transparent)]"
             particleColor="#ef4444"
             speed={2}
           />
-          <div className="absolute inset-0 w-full h-full bg-white dark:bg-neutral-950 [mask-image:radial-gradient(250px_100px_at_top,transparent_20%,white)]" />
         </div>
-      </div>
+      </motion.div>
 
-      <p className="relative z-10 text-muted-foreground text-base sm:text-lg font-medium">{t("app.welcomeBack")}</p>
+      <motion.p variants={riseIn} className="relative z-10 text-muted-foreground text-base sm:text-lg font-medium">
+        {t("app.welcomeBack")}
+      </motion.p>
     </CardHeader>
   );
 }

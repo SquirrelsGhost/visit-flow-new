@@ -36,7 +36,10 @@ export default function AuthProvider({ children }: AuthProviderProps) {
     setError(null);
     const response = await loginRequest(email, password);
     if (!response.success) {
-      setError({ type: "server", message: response.error || response.message || loginTexts.loginFailed });
+      setError({
+        type: "server",
+        message: response.error || response.message || loginTexts.loginFailed,
+      });
       return { success: false };
     }
     const { user: loggedIn, showTeamLeiterLiveTracking } = response.data;
@@ -56,7 +59,15 @@ export default function AuthProvider({ children }: AuthProviderProps) {
   const clearError = useCallback(() => setError(null), []);
 
   const value = useMemo(
-    () => ({ user, isAuthenticated: user !== null, isLoading, error, login, logout, clearError }),
+    () => ({
+      user,
+      isAuthenticated: user !== null,
+      isLoading,
+      error,
+      login,
+      logout,
+      clearError,
+    }),
     [user, isLoading, error, login, logout, clearError],
   );
 
