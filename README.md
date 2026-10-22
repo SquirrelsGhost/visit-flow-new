@@ -11,8 +11,8 @@ Voraussetzung: Node 22 und eine MongoDB.
 npm install
 cp apps/api/.env.example apps/api/.env      # Werte eintragen
 cp apps/client/.env.example apps/client/.env
-npm run dev:api      # http://localhost:3001/api/health
-npm run dev:client   # http://localhost:5173
+npm run dev:api      # http://localhost:3002/api/health (3001 belegt das v1-Backend)
+npm run dev:client   # App: http://localhost:5173/login
 ```
 
 ## Prüfen

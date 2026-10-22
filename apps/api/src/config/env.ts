@@ -5,7 +5,7 @@ const secret = (name: string) => z.string().min(32, `${name} muss mindestens 32 
 const envSchema = z
   .object({
     NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
-    PORT: z.coerce.number().int().positive().default(3001),
+    PORT: z.coerce.number().int().positive().default(3002),
     CORS_ORIGINS: z
       .string()
       .default("")

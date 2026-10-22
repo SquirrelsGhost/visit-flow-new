@@ -12,7 +12,7 @@ const valid = {
 describe("loadEnv", () => {
   it("liest eine gültige Umgebung mit Standardwerten", () => {
     const env = loadEnv(valid);
-    expect(env.PORT).toBe(3001);
+    expect(env.PORT).toBe(3002);
     expect(env.CONSENT_LOG_DAYS).toBe(1095);
     expect(env.CORS_ORIGINS).toEqual(["http://localhost:5173", "capacitor://localhost"]);
   });
