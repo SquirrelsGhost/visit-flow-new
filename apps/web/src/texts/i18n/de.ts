@@ -14,6 +14,19 @@ export const de = {
   "auth.passwordPlaceholder": "••••••••",
   "auth.rememberMe": "Angemeldet bleiben",
   "auth.forgotPassword": "Passwort vergessen?",
+  "nav.home": "Laufliste",
+  "nav.battle": "Battle",
+  "nav.overview": "Übersicht",
+  "nav.statistics": "Rechner",
+  "nav.crm": "Aufträge",
+  "nav.assistant": "Assistent",
+  "nav.profile": "Profil",
+  "nav.settings": "Einstellungen",
+  "nav.logout": "Abmelden",
+  "nav.themeDark": "Dunkler Modus",
+  "nav.themeLight": "Heller Modus",
+  "nav.offline": "Offline",
+  "header.userAccount": "Benutzerkonto",
 } as const;
 
 export type TranslationKey = keyof typeof de;

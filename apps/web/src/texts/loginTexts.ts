@@ -38,10 +38,3 @@ export const authErrorTexts = {
   support: "Falls das Problem weiterhin besteht, wenden Sie sich an den Support.",
   errorId: (id: string) => `Fehler-ID: ${id}`,
 } as const;
-
-/** Vorläufige Startseite nach dem Login, bis das Dashboard portiert ist. */
-export const homeTexts = {
-  signedInAs: (name: string) => `Angemeldet als ${name}`,
-  pending: "Das Dashboard wird als Nächstes aus der bisherigen App übernommen.",
-  logout: "Abmelden",
-} as const;
