@@ -4,7 +4,8 @@ import { defineConfig } from "vitest/config";
 
 export default defineConfig({
   plugins: [react(), tailwindcss()],
-  server: { port: 5173 },
+  // In der Entwicklung über denselben Ursprung, damit das Refresh-Cookie (SameSite=Strict) mitgeht
+  server: { port: 5173, proxy: { "/api": "http://localhost:3001" } },
   build: { outDir: "dist", sourcemap: true },
   test: {
     environment: "jsdom",
