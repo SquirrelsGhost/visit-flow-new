@@ -13,4 +13,8 @@ export interface ITranslation {
   DashboardPage: {
     MetaTags: IMetaTags;
   };
+
+  PendingPage: {
+    MetaTags: IMetaTags;
+  };
 }

@@ -96,8 +96,9 @@
 
 /* Größere Touch-Ziele auf dem Handy wie in v1 */
 @media screen and (max-width: 768px) {
-  button,
-  [role="button"],
+  /* .no-touch-target-fix: bewusst kleine Rundknöpfe der Topbar wie in v1 */
+  button:not(.no-touch-target-fix),
+  [role="button"]:not(.no-touch-target-fix),
   .touch-feedback {
     min-height: 48px !important;
     min-width: 48px !important;

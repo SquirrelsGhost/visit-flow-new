@@ -25,4 +25,15 @@ export const DE: ITranslation = {
       url: `${SITE}/dashboard`,
     },
   },
+
+  PendingPage: {
+    MetaTags: {
+      title: "Visit Flow",
+      description:
+        "Dieser Bereich von Visit Flow wird gerade aus der bisherigen App übernommen. Bis dahin findest du deine Karte und Laufliste wie gewohnt in der App.",
+      imgUrl: IMAGE,
+      tags: ["Visit Flow"],
+      url: SITE,
+    },
+  },
 };

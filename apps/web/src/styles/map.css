@@ -1,0 +1,49 @@
+/* Eigener Standort auf der Karte, Optik aus v1 (TrackingMap .vf-me), Puls weicher */
+.vf-me {
+  position: relative;
+  width: 18px;
+  height: 18px;
+}
+
+.vf-me-dot {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: #3b82f6;
+  border: 3px solid #fff;
+  box-shadow:
+    0 0 0 5px rgb(59 130 246 / 0.25),
+    0 3px 10px rgb(0 0 0 / 0.5);
+}
+
+.vf-me-ping {
+  position: absolute;
+  inset: -3px;
+  border-radius: 50%;
+  border: 2px solid #3b82f6;
+  opacity: 0.7;
+  animation: vfPing 2.2s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+}
+
+@keyframes vfPing {
+  0% {
+    transform: scale(1);
+    opacity: 0.7;
+  }
+  100% {
+    transform: scale(2.8);
+    opacity: 0;
+  }
+}
+
+/* Mapbox setzt position: relative mit gleicher Spezifität wie .absolute (v1-Fehler: Karte fiel zusammen) */
+.vf-map-canvas.mapboxgl-map {
+  position: absolute;
+  inset: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .vf-me-ping {
+    animation: none;
+  }
+}
