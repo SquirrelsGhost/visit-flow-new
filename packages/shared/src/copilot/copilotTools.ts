@@ -52,7 +52,7 @@ export const COPILOT_TOOLS = {
   },
   get_earnings: {
     kind: "read",
-    description: "Provision: geschätzte Provision diesen Monat, offene Abrechnungsposten und Reklamationen.",
+    description: "Provision: geschätzte Provision diesen Monat aus den Aufträgen, Storno-Puffer und Monatsziel.",
     parameters: none,
   },
   find_tariff: {
@@ -87,8 +87,8 @@ export const COPILOT_TOOLS = {
   },
   open_simulator: {
     kind: "open",
-    description: "Provisions-Simulator öffnen, optional mit Monatsziel in Euro.",
-    parameters: { type: "object", properties: { goalEuro: { type: "number", minimum: 0, maximum: 50000 } } },
+    description: "Provisions-Simulator öffnen, um ein Monatsziel durchzurechnen.",
+    parameters: none,
   },
   schedule_appointment: {
     kind: "confirm",
