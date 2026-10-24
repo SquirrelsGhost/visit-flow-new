@@ -8,11 +8,15 @@ import type { AuthService } from "./modules/auth/AuthService";
 import { authRoutes } from "./modules/auth/auth.routes";
 import type { ConsentService } from "./modules/consent/ConsentService";
 import { consentRoutes } from "./modules/consent/consent.routes";
+import type { CopilotService } from "./modules/copilot/CopilotService";
+import { copilotRoutes } from "./modules/copilot/copilot.routes";
 import { healthRoutes } from "./modules/health/health.routes";
 
 export interface AppServices {
   consent: ConsentService;
   auth: AuthService;
+  /** Optional, damit Tests anderer Module ohne Enes auskommen. */
+  copilot?: CopilotService;
 }
 
 export type AppEnv = Pick<Env, "JWT_SECRET" | "CORS_ORIGINS" | "NODE_ENV">;
@@ -33,6 +37,7 @@ export function createApp(env: AppEnv, services: AppServices): Express {
   app.use("/api/health", healthRoutes(deps));
   app.use("/api/consent", consentRoutes(deps, services.consent));
   app.use("/api/auth", authRoutes({ ...deps, secureCookies: env.NODE_ENV === "production" }, services.auth));
+  if (services.copilot) app.use("/api/copilot", copilotRoutes(deps, services.copilot));
 
   app.use(notFoundHandler);
   app.use(errorHandler);
