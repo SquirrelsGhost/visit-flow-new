@@ -21,6 +21,7 @@ export function mongoCoachMemoryRepository(model: Model<CoachMemoryDoc>, cipherK
     id: doc._id.toString(),
     kind: doc.kind,
     content: readField(doc.content, cipherKey) ?? "",
+    source: doc.source,
     createdAt: doc.createdAt.toISOString(),
   });
   return {

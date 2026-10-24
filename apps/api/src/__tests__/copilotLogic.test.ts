@@ -72,7 +72,7 @@ describe("Prompt", () => {
   const messages = buildCopilotMessages({
     input,
     role: "berater",
-    memories: [{ id: "1", kind: "preference", content: "Emre arbeitet lieber abends", createdAt: "" }],
+    memories: [{ id: "1", kind: "preference", content: "Emre arbeitet lieber abends", source: "user", createdAt: "" }],
     liked: [{ question: "Einwand Preis?", reply: "Sag: \"Rechnen wir kurz nach.\"" }],
     now: new Date("2026-10-24T15:00:00Z"),
     sanitizer: createSanitizer("Emre"),

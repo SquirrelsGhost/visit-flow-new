@@ -86,5 +86,7 @@ export interface CoachMemoryView {
   id: string;
   kind: CoachMemoryKind;
   content: string;
+  /** "user": hat der Nutzer gesagt ("merk dir …"), "enes": hat Enes aus dem Gespräch gemerkt. */
+  source: "user" | "enes";
   createdAt: string;
 }

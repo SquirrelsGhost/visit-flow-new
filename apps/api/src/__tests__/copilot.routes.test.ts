@@ -98,7 +98,7 @@ describe("Antwort, Feedback und Gedächtnis", () => {
     const { app, memories, logs } = setup(fakeLlm(["Ok."]));
     await request(app).post("/api/copilot/chat").set("Authorization", token).send({ message: "Merk dir: mein Ziel sind 30 Abschlüsse" });
     const list = await request(app).get("/api/copilot/memory").set("Authorization", token);
-    expect(list.body.data).toEqual([expect.objectContaining({ kind: "preference", content: "mein Ziel sind 30 Abschlüsse" })]);
+    expect(list.body.data).toEqual([expect.objectContaining({ kind: "preference", content: "mein Ziel sind 30 Abschlüsse", source: "user" })]);
     const del = await request(app).delete(`/api/copilot/memory/${list.body.data[0].id}`).set("Authorization", token);
     expect(del.body.data).toEqual({ deleted: true });
     await memories.add(bea.id, "fact", "Läuft mit Fahrrad", "user");

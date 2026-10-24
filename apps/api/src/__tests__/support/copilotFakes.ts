@@ -19,16 +19,16 @@ export function fakeLlm(chunks: (string | LlmToolCall)[]): LlmClient & { calls: 
   };
 }
 
-export function memoryCoachMemories(): CoachMemoryRepository & { rows: (CoachMemoryView & { userId: string; source: string })[] } {
-  const rows: (CoachMemoryView & { userId: string; source: string })[] = [];
+export function memoryCoachMemories(): CoachMemoryRepository & { rows: (CoachMemoryView & { userId: string })[] } {
+  const rows: (CoachMemoryView & { userId: string })[] = [];
   return {
     rows,
     async add(userId, kind, content, source) {
       const row = { id: new Types.ObjectId().toString(), userId, kind, content, source, createdAt: new Date().toISOString() };
       rows.unshift(row);
-      return { id: row.id, kind, content, createdAt: row.createdAt };
+      return { id: row.id, kind, content, source, createdAt: row.createdAt };
     },
-    list: async (userId, limit) => rows.filter((r) => r.userId === userId).slice(0, limit).map(({ id, kind, content, createdAt }) => ({ id, kind, content, createdAt })),
+    list: async (userId, limit) => rows.filter((r) => r.userId === userId).slice(0, limit).map(({ id, kind, content, source, createdAt }) => ({ id, kind, content, source, createdAt })),
     async remove(userId, id) {
       const index = rows.findIndex((r) => r.userId === userId && r.id === id);
       if (index >= 0) rows.splice(index, 1);
