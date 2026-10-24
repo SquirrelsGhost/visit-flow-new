@@ -7,9 +7,9 @@ const now = new Date("2026-10-17T12:00:00+02:00");
 
 describe("toUserView", () => {
   it("liefert die v1-Felder mit Standardwerten und ohne interne Daten", () => {
-    const view = toUserView(makeUser({ teamId: "T1", deviceIds: ["d1"], userAgent: "Mozilla" }), extras, now);
-    expect(view).toMatchObject({ teamId: "T1", permissions: [], partnerStatus: "none", billingCountry: "DE", subscriptionStatus: "active" });
-    for (const key of ["password", "lastIpAddress", "stripeCustomerId", "deviceIds", "userAgent", "_id"]) expect(view).not.toHaveProperty(key);
+    const view = toUserView(makeUser({ teamId: "T1", profile: { deviceIds: ["d1"], userAgent: "Mozilla", lastIpAddress: "203.0.113.9", billingCity: "Köln" } }), extras, now);
+    expect(view).toMatchObject({ teamId: "T1", billingCity: "Köln", permissions: [], partnerStatus: "none", billingCountry: "DE", subscriptionStatus: "active" });
+    for (const key of ["password", "passwordHash", "profile", "lastIpAddress", "stripeCustomerId", "deviceIds", "userAgent", "_id"]) expect(view).not.toHaveProperty(key);
   });
 
   it("rechnet Junior- und Regular-Berater aus dem Vertragsmonat wie v1", () => {

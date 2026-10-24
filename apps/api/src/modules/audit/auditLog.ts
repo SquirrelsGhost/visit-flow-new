@@ -1,10 +1,9 @@
-import { Types, type Connection } from "mongoose";
+import type { Database } from "../../config/db";
+import { auditLogs } from "./AuditLog.model";
 
 /**
- * Schreibt Sicherheitsereignisse in die v1-Collection `audit_logs`, im selben Format wie v1
- * (server/src/models/AuditLog.model.ts), damit das Admin-Sicherheitsdashboard sie weiter anzeigt.
- * v1 löscht die Einträge per TTL-Index nach 90 Tagen. Die volle IP wird hier bewusst behalten:
- * Sicherheitsprotokoll nach Art. 6 Abs. 1 lit. f DSGVO, mit kurzer Frist.
+ * Schreibt Sicherheitsereignisse in `audit_logs`, mit denselben Aktionen und Feldern wie v1
+ * (server/src/models/AuditLog.model.ts), damit das Admin-Sicherheitsdashboard sie anzeigen kann.
  */
 export type AuditAction = "LOGIN_SUCCESS" | "LOGIN_FAILED" | "LOGIN_BLOCKED" | "REFRESH_TOKEN_REUSED" | "CROSS_TEAM_ACCESS_DENIED";
 
@@ -22,27 +21,21 @@ export interface AuditLog {
   security(entry: AuditEntry): Promise<void>;
 }
 
-// Wie Mongoose in v1: fehlende Werte gar nicht speichern statt als null
-const withoutUndefined = (value: Record<string, unknown>) =>
-  Object.fromEntries(Object.entries(value).filter(([, v]) => v !== undefined));
-
-export function mongoAuditLog(db: Connection): AuditLog {
-  const logs = db.collection("audit_logs");
+export function pgAuditLog(db: Database, now: () => Date = () => new Date()): AuditLog {
   return {
     async security(entry) {
       try {
-        await logs.insertOne({
+        await db.insert(auditLogs).values({
           action: entry.action,
           category: "SECURITY",
-          actor: withoutUndefined({
-            userId: entry.userId && Types.ObjectId.isValid(entry.userId) ? new Types.ObjectId(entry.userId) : undefined,
-            email: entry.email,
-            ip: entry.ip,
-            userAgent: entry.userAgent,
-          }),
-          ...(entry.target ? { target: entry.target } : {}),
-          ...(entry.metadata ? { metadata: entry.metadata } : {}),
-          timestamp: new Date(),
+          actorUserId: entry.userId ?? null,
+          actorEmail: entry.email ?? null,
+          actorIp: entry.ip,
+          actorUserAgent: entry.userAgent ?? null,
+          targetType: entry.target?.type ?? null,
+          targetId: entry.target?.id ?? null,
+          metadata: entry.metadata ?? null,
+          timestamp: now(),
         });
       } catch (error) {
         // Ein fehlendes Protokoll darf den Login nicht blockieren

@@ -1,4 +1,4 @@
-import type { UserDoc } from "./User.model";
+import type { UserRecord } from "./User.model";
 
 /**
  * Felder, die der v1-Client am Nutzer liest und die unverändert durchgereicht werden
@@ -6,7 +6,7 @@ import type { UserDoc } from "./User.model";
  * nicht braucht und sie personenbezogen oder intern sind: lastIpAddress, userAgent,
  * deviceIds, stripeCustomerId.
  */
-const PASSTHROUGH = [
+export const PASSTHROUGH = [
   "email", "name", "role", "roles", "profilePicture", "phone", "createdAt", "updatedAt",
   "whatsappNumber", "tiktokUrl", "instagramUrl", "facebookUrl", "isActive", "isBlocked", "isOnline",
   "emailVerified", "termsAccepted", "isCompanyAccount", "companyName", "verifiedCompanyEmail",
@@ -21,8 +21,8 @@ const PASSTHROUGH = [
   "referralCode", "referredBy", "allowedVerticals",
 ] as const;
 
-/** Felder mit Standardwert, falls sie im Dokument fehlen (wie in v1). */
-const DEFAULTS: Record<string, unknown> = {
+/** Felder mit Standardwert, falls sie fehlen (wie in v1). */
+export const DEFAULTS: Record<string, unknown> = {
   permissions: [],
   isAnonymousInLeaderboard: false,
   recentEmojis: ["❤️", "👍", "😂", "🔥", "🎉"],
@@ -52,21 +52,27 @@ export function vodafoneMonth(start: Date | null | undefined, now: Date): number
   return months > 0 ? months : null;
 }
 
-function paymentRequired(user: UserDoc, now: Date): boolean {
+function paymentRequired(user: UserRecord, now: Date): boolean {
   if (user.giftedUntil && new Date(user.giftedUntil) > now) return false;
-  return user.paymentRequired ?? false;
+  return user.paymentRequired;
+}
+
+/** Wert aus einer echten Spalte, sonst aus den noch nicht umgezogenen v1-Profilfeldern. */
+function field(user: UserRecord, key: string): unknown {
+  if (key !== "profile" && key !== "passwordHash" && key in user) return (user as Record<string, unknown>)[key];
+  return user.profile[key];
 }
 
 /** Profil-Antwort im Format, das der v1-Client erwartet. Enthält nie den Passwort-Hash. */
-export function toUserView(user: UserDoc, extras: UserViewExtras, now = new Date()): UserView {
+export function toUserView(user: UserRecord, extras: UserViewExtras, now = new Date()): UserView {
   const view: Record<string, unknown> = {};
-  for (const key of PASSTHROUGH) view[key] = user[key];
-  for (const [key, fallback] of Object.entries(DEFAULTS)) view[key] = user[key] ?? fallback;
+  for (const key of PASSTHROUGH) view[key] = field(user, key);
+  for (const [key, fallback] of Object.entries(DEFAULTS)) view[key] = field(user, key) ?? fallback;
 
   const month = vodafoneMonth(user.vodafoneContractStart, now);
   return {
     ...view,
-    id: String(user._id),
+    id: user.id,
     email: user.email,
     role: user.role,
     vodafoneCurrentMonth: month,

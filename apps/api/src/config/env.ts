@@ -10,7 +10,7 @@ const envSchema = z
       .string()
       .default("")
       .transform((value) => value.split(",").map((origin) => origin.trim()).filter(Boolean)),
-    MONGO_URI: z.string().min(1),
+    DATABASE_URL: z.string().regex(/^postgres(ql)?:\/\//, "DATABASE_URL muss mit postgres:// beginnen"),
     JWT_SECRET: secret("JWT_SECRET"),
     DATA_CIPHER_KEY: secret("DATA_CIPHER_KEY"),
     BLIND_INDEX_KEY: secret("BLIND_INDEX_KEY"),

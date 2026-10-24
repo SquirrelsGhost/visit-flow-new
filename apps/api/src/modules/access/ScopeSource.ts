@@ -1,4 +1,7 @@
-import { Types, type Connection } from "mongoose";
+import { and, eq, inArray, or, type SQL } from "drizzle-orm";
+import type { Database } from "../../config/db";
+import { areas, areaTeams } from "../teams/Area.model";
+import { users } from "../users/User.model";
 
 export interface ScopeUser {
   id: string;
@@ -7,61 +10,42 @@ export interface ScopeUser {
   teamId?: string | null;
 }
 
-/** Datenzugriffe für die Team-Abgrenzung, nur lesend auf den v1-Collections users, teams, areas. */
+/** Datenzugriffe für die Team-Abgrenzung, nur lesend auf users, areas und area_teams. */
 export interface ScopeSource {
   user(id: string): Promise<ScopeUser | null>;
-  /** Visit-Daten referenzieren Nutzer teils über `_id`, teils über das alte Feld `id`. */
+  /** Visit-Daten referenzieren Nutzer teils über die ID, teils über das alte v1-Feld `id`. */
   userByAnyId(anyId: string): Promise<ScopeUser | null>;
   activeUsers(filter: { teamIds?: string[]; strukturleiterId?: string; mentorIds?: string[] }): Promise<ScopeUser[]>;
   /** Teams in den aktiven Gebieten eines Gebietsmanagers. */
   gebietsmanagerTeamIds(managerId: string): Promise<string[]>;
 }
 
-interface RawUser {
-  _id: Types.ObjectId;
-  role: string;
-  roles?: string[];
-  teamId?: string | null;
-}
+const columns = { id: users.id, role: users.role, roles: users.roles, teamId: users.teamId };
 
-const toScopeUser = (u: RawUser): ScopeUser => ({ id: String(u._id), role: u.role, roles: u.roles, teamId: u.teamId ?? null });
-const projection = { role: 1, roles: 1, teamId: 1 };
-
-export function mongoScopeSource(db: Connection): ScopeSource {
-  const users = db.collection<RawUser>("users");
-  const teams = db.collection<{ _id: Types.ObjectId; area_id?: Types.ObjectId }>("teams");
-  const areas = db.collection<{ _id: Types.ObjectId; team_ids?: Types.ObjectId[] }>("areas");
-
-  const byObjectId = async (id: string) =>
-    Types.ObjectId.isValid(id) ? users.findOne({ _id: new Types.ObjectId(id) }, { projection }) : null;
+export function pgScopeSource(db: Database): ScopeSource {
+  const findOne = async (where: SQL | undefined) => {
+    const [row] = await db.select(columns).from(users).where(where).limit(1);
+    return row ?? null;
+  };
 
   return {
-    async user(id) {
-      const found = await byObjectId(id);
-      return found ? toScopeUser(found) : null;
-    },
-    async userByAnyId(anyId) {
-      const found = (await byObjectId(anyId)) ?? (await users.findOne({ id: anyId }, { projection }));
-      return found ? toScopeUser(found) : null;
-    },
+    user: (id) => findOne(eq(users.id, id)),
+    userByAnyId: (anyId) => findOne(or(eq(users.id, anyId), eq(users.legacyId, anyId))),
     async activeUsers({ teamIds, strukturleiterId, mentorIds }) {
-      const filter: Record<string, unknown> = { isActive: true };
-      if (teamIds) filter.teamId = { $in: teamIds };
-      if (strukturleiterId) filter.strukturleiterId = strukturleiterId;
-      if (mentorIds) filter.mentorId = { $in: mentorIds };
-      const rows = await users.find(filter, { projection }).toArray();
-      return rows.map(toScopeUser);
+      if (teamIds?.length === 0 || mentorIds?.length === 0) return [];
+      const conditions = [eq(users.isActive, true)];
+      if (teamIds) conditions.push(inArray(users.teamId, teamIds));
+      if (strukturleiterId) conditions.push(eq(users.strukturleiterId, strukturleiterId));
+      if (mentorIds) conditions.push(inArray(users.mentorId, mentorIds));
+      return db.select(columns).from(users).where(and(...conditions));
     },
     async gebietsmanagerTeamIds(managerId) {
-      if (!Types.ObjectId.isValid(managerId)) return [];
-      const managed = await areas.find({ manager_id: new Types.ObjectId(managerId), is_active: true }, { projection: { team_ids: 1 } }).toArray();
-      const ids = new Set<string>();
-      managed.forEach((area) => (area.team_ids ?? []).forEach((teamId) => ids.add(String(teamId))));
-      if (managed.length > 0) {
-        const inAreas = await teams.find({ area_id: { $in: managed.map((area) => area._id) } }, { projection: { _id: 1 } }).toArray();
-        inAreas.forEach((team) => ids.add(String(team._id)));
-      }
-      return [...ids];
+      const rows = await db
+        .selectDistinct({ teamId: areaTeams.teamId })
+        .from(areaTeams)
+        .innerJoin(areas, eq(areas.id, areaTeams.areaId))
+        .where(and(eq(areas.managerId, managerId), eq(areas.isActive, true)));
+      return rows.map((row) => row.teamId);
     },
   };
 }

@@ -1,14 +1,18 @@
-import { Types, type Connection } from "mongoose";
-import type { UserDoc } from "./User.model";
+import { and, desc, eq, inArray, ne, or, isNull } from "drizzle-orm";
+import type { Database } from "../../config/db";
+import { subscriptions } from "../billing/Subscription.model";
+import { systemSettings } from "../settings/SystemSettings.model";
+import { teamMembers, teams } from "../teams/Team.model";
+import type { UserRecord } from "./User.model";
 import type { UserViewExtras } from "./userView";
 
 /**
- * Ergänzungen zur Profil-Antwort aus anderen v1-Collections (nur lesend).
+ * Ergänzungen zur Profil-Antwort aus Abos, Teams und Systemschaltern (nur lesend).
  * Port von `shapeUserWithSubscription` und `SubscriptionService.isTrioHeimUser` aus v1.
  */
 export interface UserExtrasSource {
-  forUser(user: UserDoc): Promise<UserViewExtras>;
-  /** Systemschalter aus v1 `systemsettings`, fehlt er, gilt wie in v1 `true`. */
+  forUser(user: UserRecord): Promise<UserViewExtras>;
+  /** Systemschalter, fehlt die Zeile, gilt wie in v1 `true`. */
   showTeamLeiterLiveTracking(): Promise<boolean>;
 }
 
@@ -16,29 +20,32 @@ const ACTIVE_STATES = ["active", "trialing", "past_due", "canceled"];
 const isFreePlan = (planId: string) => planId.endsWith("-free") || planId.endsWith("-basic");
 const mentionsTrio = (text: unknown) => typeof text === "string" && text.toLowerCase().includes("trio");
 
-export function mongoUserExtras(db: Connection): UserExtrasSource {
-  const subscriptions = db.collection<{ userId: string; planId: string; status: string; type?: string; createdAt?: Date }>("subscriptions");
-  const teams = db.collection<{ name?: string }>("teams");
-  const settings = db.collection<{ showTeamLeiterLiveTracking?: boolean }>("systemsettings");
-
-  async function subscriptionStatus(user: UserDoc): Promise<string> {
+export function pgUserExtras(db: Database): UserExtrasSource {
+  async function subscriptionStatus(user: UserRecord): Promise<string> {
     // Wie v1: nur nachsehen, wenn der Nutzer überhaupt zahlen muss
     if (!user.paymentRequired) return "none";
-    const sub = await subscriptions.findOne(
-      { userId: String(user._id), type: { $ne: "addon" }, status: { $in: ACTIVE_STATES } },
-      { sort: { createdAt: -1 }, projection: { planId: 1, status: 1 } },
-    );
+    const [sub] = await db
+      .select({ planId: subscriptions.planId, status: subscriptions.status })
+      .from(subscriptions)
+      .where(and(
+        eq(subscriptions.userId, user.id),
+        or(isNull(subscriptions.type), ne(subscriptions.type, "addon")),
+        inArray(subscriptions.status, ACTIVE_STATES),
+      ))
+      .orderBy(desc(subscriptions.createdAt))
+      .limit(1);
     if (!sub || isFreePlan(sub.planId)) return "none";
     return sub.status || "none";
   }
 
-  async function isTrioHeim(user: UserDoc): Promise<boolean> {
+  async function isTrioHeim(user: UserRecord): Promise<boolean> {
     if (mentionsTrio(user.email)) return true;
-    const id = new Types.ObjectId(String(user._id));
-    const team = await teams.findOne(
-      { $or: [{ team_leader_id: id }, { member_ids: id }, { mentor_ids: id }], is_active: true },
-      { projection: { name: 1 } },
-    );
+    const memberOf = db.select({ teamId: teamMembers.teamId }).from(teamMembers).where(eq(teamMembers.userId, user.id));
+    const [team] = await db
+      .select({ name: teams.name })
+      .from(teams)
+      .where(and(eq(teams.isActive, true), or(eq(teams.teamLeaderId, user.id), inArray(teams.id, memberOf))))
+      .limit(1);
     return mentionsTrio(team?.name);
   }
 
@@ -48,8 +55,8 @@ export function mongoUserExtras(db: Connection): UserExtrasSource {
       return { subscriptionStatus: status, isTrioHeim: trio };
     },
     async showTeamLeiterLiveTracking() {
-      const doc = await settings.findOne({}, { projection: { showTeamLeiterLiveTracking: 1 } });
-      return doc?.showTeamLeiterLiveTracking ?? true;
+      const [row] = await db.select({ value: systemSettings.showTeamLeiterLiveTracking }).from(systemSettings).limit(1);
+      return row?.value ?? true;
     },
   };
 }
