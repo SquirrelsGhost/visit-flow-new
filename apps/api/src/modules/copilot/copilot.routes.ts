@@ -20,7 +20,7 @@ function sendEvent(res: Response, event: Record<string, unknown>): void {
 export function copilotRoutes(deps: RouteDeps, service: CopilotService): Router {
   const router = Router();
 
-  // SSE: data: {type:"token",text} … {type:"done",logId,intent,action,path} oder {type:"error",message}
+  // SSE: data: {type:"token",text} … [{type:"tool_calls",calls}] {type:"done",logId,final,intent,action,path} oder {type:"error",message}
   defineRoute(router, deps, {
     method: "post",
     path: "/chat-stream",
@@ -35,8 +35,9 @@ export function copilotRoutes(deps: RouteDeps, service: CopilotService): Router 
       res.status(200).set({ "Content-Type": "text/event-stream", "Cache-Control": "no-cache, no-transform", Connection: "keep-alive", "X-Accel-Buffering": "no" });
       res.flushHeaders();
       try {
-        const result = await service.chat(user, body, (text) => sendEvent(res, { type: "token", text }), abort.signal);
-        sendEvent(res, { type: "done", logId: result.logId, intent: result.intent, action: result.action, path: result.path, remembered: result.remembered.length });
+        const result = await service.chat(user, body, (event) => sendEvent(res, event), abort.signal);
+        const { logId, final, intent, action, path, remembered } = result;
+        sendEvent(res, { type: "done", logId, final, intent, action, path, remembered: remembered.length });
       } catch (error) {
         if (!abort.signal.aborted) {
           console.error("[Copilot] Stream abgebrochen:", error);
@@ -54,8 +55,8 @@ export function copilotRoutes(deps: RouteDeps, service: CopilotService): Router 
     before: [chatLimiter],
     body: copilotChatInputSchema,
     handler: async ({ body, user }) => {
-      const { reply, logId, action, path } = await service.chat(user, body, () => undefined);
-      return { reply, logId, action, path };
+      const { reply, logId, final, toolCalls, action, path } = await service.chat(user, body, () => undefined);
+      return { reply, logId, final, toolCalls, action, path };
     },
   });
 

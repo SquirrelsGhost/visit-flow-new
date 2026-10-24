@@ -2,7 +2,7 @@ import type { CoachMemoryView, CopilotChatInput } from "@visit-flow/shared/copil
 import type { CopilotExchange } from "./CopilotLogRepository";
 import type { LlmMessage } from "./llm/LlmClient";
 import type { Sanitizer } from "./copilotSanitizer";
-import { MARKERS, OBJECTIONS, PERSONA, PRIVACY, profileText, ROLEPLAY, STORNO, VERTICALS } from "./texts/copilotPrompts";
+import { MEMORY_MARKER, NAV_MARKER, OBJECTIONS, PERSONA, PRIVACY, profileText, ROLEPLAY, STORNO, TOOLS_GUIDE, VERTICALS } from "./texts/copilotPrompts";
 
 export interface PromptContext {
   input: CopilotChatInput;
@@ -31,8 +31,12 @@ function likedText(liked: readonly CopilotExchange[], sanitizer: Sanitizer): str
 }
 
 function situation(ctx: PromptContext): string {
-  const time = ctx.now.toLocaleString("de-DE", { weekday: "long", hour: "2-digit", minute: "2-digit", timeZone: "Europe/Berlin" });
-  return `SITUATION: ${time}, Rolle ${ctx.role}, gerade auf der Seite ${ctx.input.currentPath}.`;
+  const zone = { timeZone: "Europe/Berlin" } as const;
+  const day = ctx.now.toLocaleDateString("de-DE", { ...zone, weekday: "long" });
+  // ISO-Datum, damit Enes "morgen" für Werkzeuge sicher in YYYY-MM-DD umrechnet
+  const today = ctx.now.toLocaleDateString("sv-SE", zone);
+  const time = ctx.now.toLocaleTimeString("de-DE", { ...zone, hour: "2-digit", minute: "2-digit" });
+  return `SITUATION: HEUTE ist ${day}, ${today}, ${time} Uhr. Rolle ${ctx.role}, gerade auf der Seite ${ctx.input.currentPath}.`;
 }
 
 /** Ältere Nachrichten fallen zuerst weg, bis der Verlauf ins Budget passt. */
@@ -59,7 +63,8 @@ export function buildCopilotMessages(ctx: PromptContext): LlmMessage[] {
     OBJECTIONS,
     ROLEPLAY,
     STORNO,
-    MARKERS,
+    ctx.input.tools.length > 0 ? TOOLS_GUIDE : NAV_MARKER,
+    MEMORY_MARKER,
     VERTICALS[ctx.input.vertical] ?? "",
     situation(ctx),
     profileText(ctx.input.coach),
@@ -72,5 +77,21 @@ export function buildCopilotMessages(ctx: PromptContext): LlmMessage[] {
     { role: "system", content: system },
     ...trimmedHistory(ctx),
     { role: "user", content: ctx.sanitizer.outbound(ctx.input.message) },
+    ...toolRoundMessages(ctx),
   ];
+}
+
+/** Bisherige Werkzeug-Runden: Aufrufe von Enes, dann die Ergebnisse aus der App (geschwärzt). */
+function toolRoundMessages(ctx: PromptContext): LlmMessage[] {
+  return ctx.input.toolRounds.flatMap((round): LlmMessage[] => [
+    {
+      role: "assistant",
+      content: round.text ? ctx.sanitizer.outbound(round.text) : null,
+      tool_calls: round.calls.map((c) => ({ id: c.id, type: "function", function: { name: c.name, arguments: c.arguments } })),
+    },
+    ...round.calls.map((c): LlmMessage => {
+      const result = round.results.find((r) => r.id === c.id)?.content ?? "nicht verfügbar";
+      return { role: "tool", tool_call_id: c.id, content: ctx.sanitizer.outbound(result) };
+    }),
+  ]);
 }

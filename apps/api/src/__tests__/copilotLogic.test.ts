@@ -4,7 +4,7 @@ import { createMarkerFilter } from "../modules/copilot/copilotMarkers";
 import { explicitMemory } from "../modules/copilot/copilotMemoryRules";
 import { buildCopilotMessages } from "../modules/copilot/copilotPrompt";
 import { createSanitizer, redactPii } from "../modules/copilot/copilotSanitizer";
-import { readSseDeltas } from "../modules/copilot/llm/LlmClient";
+import { readSseChunks } from "../modules/copilot/llm/LlmClient";
 
 function streamAll(chunks: string[]) {
   const filter = createMarkerFilter();
@@ -97,18 +97,39 @@ describe("Prompt", () => {
   });
 });
 
+const sseBody = (parts: string[]) => {
+  const encoder = new TextEncoder();
+  return new ReadableStream<Uint8Array>({
+    start(controller) {
+      for (const p of parts) controller.enqueue(encoder.encode(p));
+      controller.close();
+    },
+  });
+};
+
+async function collect(parts: string[]) {
+  const out = [];
+  for await (const chunk of readSseChunks(sseBody(parts))) out.push(chunk);
+  return out;
+}
+
 describe("Azure-Stream", () => {
-  it("liest Deltas über Zeilengrenzen hinweg", async () => {
-    const encoder = new TextEncoder();
+  it("liest Text über Zeilengrenzen hinweg", async () => {
     const parts = ['data: {"choices":[{"delta":{"content":"Hal"}}]}\n\ndata: {"choi', 'ces":[{"delta":{"content":"lo"}}]}\n\ndata: [DONE]\n\n'];
-    const body = new ReadableStream<Uint8Array>({
-      start(controller) {
-        for (const p of parts) controller.enqueue(encoder.encode(p));
-        controller.close();
-      },
-    });
-    const out: string[] = [];
-    for await (const delta of readSseDeltas(body)) out.push(delta);
-    expect(out).toEqual(["Hal", "lo"]);
+    expect(await collect(parts)).toEqual([{ type: "text", text: "Hal" }, { type: "text", text: "lo" }]);
+  });
+
+  it("setzt Werkzeug-Aufrufe aus Stücken zusammen", async () => {
+    const delta = (d: object) => `data: ${JSON.stringify({ choices: [{ delta: d }] })}\n\n`;
+    const parts = [
+      delta({ tool_calls: [{ index: 0, id: "call_1", function: { name: "get_today", arguments: "" } }] }),
+      delta({ tool_calls: [{ index: 1, id: "call_2", function: { name: "find_", arguments: '{"que' } }] }),
+      delta({ tool_calls: [{ index: 1, function: { name: "tariff", arguments: 'ry":"Giga"}' } }] }),
+      "data: [DONE]\n\n",
+    ];
+    expect(await collect(parts)).toEqual([
+      { type: "tool", call: { id: "call_1", name: "get_today", arguments: "" } },
+      { type: "tool", call: { id: "call_2", name: "find_tariff", arguments: '{"query":"Giga"}' } },
+    ]);
   });
 });

@@ -2,16 +2,19 @@ import { Types } from "mongoose";
 import type { CoachMemoryView } from "@visit-flow/shared/copilotSchema";
 import type { CoachMemoryRepository } from "../../modules/copilot/CoachMemoryRepository";
 import type { CopilotExchange, CopilotLogRepository } from "../../modules/copilot/CopilotLogRepository";
-import type { LlmClient, LlmMessage } from "../../modules/copilot/llm/LlmClient";
+import type { LlmClient, LlmMessage, LlmStreamOptions, LlmToolCall } from "../../modules/copilot/llm/LlmClient";
 
-/** Streamt feste Stücke und merkt sich, was ans Modell ging. */
-export function fakeLlm(chunks: string[]): LlmClient & { calls: LlmMessage[][] } {
+/** Streamt feste Stücke (Text oder Werkzeug-Aufruf) und merkt sich, was ans Modell ging. */
+export function fakeLlm(chunks: (string | LlmToolCall)[]): LlmClient & { calls: LlmMessage[][]; options: LlmStreamOptions[] } {
   const calls: LlmMessage[][] = [];
+  const options: LlmStreamOptions[] = [];
   return {
     calls,
-    async *stream(messages) {
+    options,
+    async *stream(messages, opts = {}) {
       calls.push([...messages]);
-      for (const chunk of chunks) yield chunk;
+      options.push(opts);
+      for (const chunk of chunks) yield typeof chunk === "string" ? { type: "text", text: chunk } : { type: "tool", call: chunk };
     },
   };
 }

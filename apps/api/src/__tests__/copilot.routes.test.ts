@@ -5,7 +5,7 @@ import { signAccessToken } from "../lib/auth/accessToken";
 import { ConsentService } from "../modules/consent/ConsentService";
 import { copilotPrivacy } from "../modules/copilot/copilotPrivacy";
 import { CopilotService } from "../modules/copilot/CopilotService";
-import type { LlmClient } from "../modules/copilot/llm/LlmClient";
+import type { LlmChunk, LlmClient } from "../modules/copilot/llm/LlmClient";
 import { JWT_SECRET, makeAuth } from "./support/authFakes";
 import { fakeLlm, memoryCoachMemories, memoryCopilotLogs } from "./support/copilotFakes";
 
@@ -68,7 +68,7 @@ describe("POST /api/copilot/chat-stream", () => {
   });
 
   it("meldet einen Modellfehler als error-Event", async () => {
-    const failing: AsyncIterable<string> = { [Symbol.asyncIterator]: () => ({ next: () => Promise.reject(new Error("kaputt")) }) };
+    const failing: AsyncIterable<LlmChunk> = { [Symbol.asyncIterator]: () => ({ next: () => Promise.reject(new Error("kaputt")) }) };
     const broken = setup({ stream: () => failing });
     const res = await request(broken.app).post("/api/copilot/chat-stream").set("Authorization", token).send({ message: "Hallo" });
     expect(events(res.text)).toEqual([{ type: "error", message: expect.any(String) }]);

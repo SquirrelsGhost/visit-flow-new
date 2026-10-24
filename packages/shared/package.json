@@ -9,7 +9,8 @@
     "./consent": "./src/consent/consent.ts",
     "./consentSchema": "./src/consent/consentSchema.ts",
     "./auth": "./src/auth/authSchemas.ts",
-    "./copilotSchema": "./src/copilot/copilotSchema.ts"
+    "./copilotSchema": "./src/copilot/copilotSchema.ts",
+    "./copilotTools": "./src/copilot/copilotTools.ts"
   },
   "scripts": {
     "typecheck": "tsc -p tsconfig.json",

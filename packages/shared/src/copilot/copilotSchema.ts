@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { COPILOT_TOOL_NAMES } from "./copilotTools";
 
 export const COPILOT_VERTICALS = ["telco", "energy", "solar"] as const;
 export const COACH_WEAK_SPOTS = ["notMet", "noInterest", "supplied", "closing"] as const;
@@ -25,6 +26,23 @@ export const coachContextSchema = z
 
 export type CoachContext = z.infer<typeof coachContextSchema>;
 
+/** Höchstens so viele Werkzeug-Runden pro Frage; danach muss Enes antworten. */
+export const MAX_TOOL_ROUNDS = 3;
+
+const toolCallSchema = z.object({ id: z.string().min(1).max(64), name: z.enum(COPILOT_TOOL_NAMES), arguments: z.string().max(2000) }).strict();
+const toolResultSchema = z.object({ id: z.string().min(1).max(64), content: z.string().max(4000) }).strict();
+
+/** Eine abgeschlossene Werkzeug-Runde: Text und Aufrufe von Enes, Ergebnisse aus der App. */
+const toolRoundSchema = z
+  .object({
+    text: z.string().max(2000).default(""),
+    calls: z.array(toolCallSchema).min(1).max(4),
+    results: z.array(toolResultSchema).max(4),
+  })
+  .strict();
+
+export type CopilotToolRound = z.infer<typeof toolRoundSchema>;
+
 const historyItemSchema = z.object({ sender: z.enum(["user", "ai"]), text: z.string().max(4000) }).strict();
 
 /**
@@ -40,6 +58,10 @@ export const copilotChatInputSchema = z
     userRole: z.string().max(40).optional(),
     vertical: z.enum(COPILOT_VERTICALS).default("telco"),
     coach: coachContextSchema.optional(),
+    /** Werkzeuge, die die App für diesen Nutzer ausführen kann (Rolle und Sparte schon geprüft). */
+    tools: z.array(z.enum(COPILOT_TOOL_NAMES)).max(COPILOT_TOOL_NAMES.length).default([]),
+    /** Bisherige Runden dieser Frage, wenn die App Werkzeug-Ergebnisse nachreicht. */
+    toolRounds: z.array(toolRoundSchema).max(MAX_TOOL_ROUNDS).default([]),
   })
   .strict();
 
