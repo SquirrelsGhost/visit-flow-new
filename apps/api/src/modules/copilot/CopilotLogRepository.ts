@@ -1,6 +1,8 @@
-import type { Model } from "mongoose";
-import { readField, seal } from "../../lib/crypto/dataCipher";
-import type { CopilotLogDoc } from "./CopilotLog.model";
+import { and, desc, eq } from "drizzle-orm";
+import type { Database } from "../../config/db";
+import { readField, seal, type SealedValue } from "../../lib/crypto/dataCipher";
+import { newObjectId } from "../../lib/db/objectId";
+import { copilotLogs } from "./CopilotLog.model";
 
 export interface CopilotExchange {
   question: string;
@@ -18,33 +20,40 @@ export interface CopilotLogRepository {
   deleteForUser(userId: string): Promise<number>;
 }
 
-type StoredLog = CopilotLogDoc & { _id: { toString(): string } };
-
-export function mongoCopilotLogRepository(model: Model<CopilotLogDoc>, cipherKey: string): CopilotLogRepository {
-  const open = (doc: StoredLog): CopilotExchange => ({
-    question: readField(doc.question, cipherKey) ?? "",
-    reply: readField(doc.reply, cipherKey) ?? "",
+export function pgCopilotLogRepository(db: Database, cipherKey: string): CopilotLogRepository {
+  const open = (row: { question: SealedValue; reply: SealedValue }): CopilotExchange => ({
+    question: readField(row.question, cipherKey) ?? "",
+    reply: readField(row.reply, cipherKey) ?? "",
   });
+  const newest = [desc(copilotLogs.createdAt), desc(copilotLogs.id)];
   return {
     async insert(userId, vertical, exchange) {
-      const created = await model.create({ userId, vertical, question: seal(exchange.question, cipherKey), reply: seal(exchange.reply, cipherKey), feedback: null });
-      return created._id.toString();
+      const id = newObjectId();
+      await db.insert(copilotLogs).values({ id, userId, vertical, question: seal(exchange.question, cipherKey), reply: seal(exchange.reply, cipherKey) });
+      return id;
     },
     async setFeedback(userId, logId, feedback, reason) {
-      const result = await model.updateOne({ _id: logId, userId }, { $set: { feedback, ...(reason ? { reason } : {}) } }).exec();
-      return result.matchedCount === 1;
+      const result = await db
+        .update(copilotLogs)
+        .set({ feedback, ...(reason ? { reason } : {}) })
+        .where(and(eq(copilotLogs.id, logId), eq(copilotLogs.userId, userId)));
+      return (result.rowCount ?? 0) === 1;
     },
     async liked(userId, vertical, limit) {
-      const docs = await model.find({ userId, vertical, feedback: "up" }).sort({ createdAt: -1 }).limit(limit).lean<StoredLog[]>().exec();
-      return docs.map(open);
+      const rows = await db
+        .select({ question: copilotLogs.question, reply: copilotLogs.reply })
+        .from(copilotLogs)
+        .where(and(eq(copilotLogs.userId, userId), eq(copilotLogs.vertical, vertical), eq(copilotLogs.feedback, "up")))
+        .orderBy(...newest)
+        .limit(limit);
+      return rows.map(open);
     },
     async exportForUser(userId) {
-      const docs = await model.find({ userId }).sort({ createdAt: -1 }).lean<StoredLog[]>().exec();
-      return docs.map((doc) => ({ ...open(doc), feedback: doc.feedback, createdAt: doc.createdAt.toISOString() }));
+      const rows = await db.select().from(copilotLogs).where(eq(copilotLogs.userId, userId)).orderBy(...newest);
+      return rows.map((row) => ({ ...open(row), feedback: row.feedback, createdAt: row.createdAt.toISOString() }));
     },
     async deleteForUser(userId) {
-      const result = await model.deleteMany({ userId }).exec();
-      return result.deletedCount;
+      return (await db.delete(copilotLogs).where(eq(copilotLogs.userId, userId))).rowCount ?? 0;
     },
   };
 }

@@ -1,50 +1,53 @@
-import mongoose from "mongoose";
+import { drizzle, type NodePgDatabase } from "drizzle-orm/node-postgres";
+import { sql } from "drizzle-orm";
+import { Pool } from "pg";
 
-const CONNECT_OPTIONS: mongoose.ConnectOptions = {
-  maxPoolSize: 50,
-  minPoolSize: 5,
-  maxIdleTimeMS: 30_000,
-  serverSelectionTimeoutMS: 5_000,
-  socketTimeoutMS: 45_000,
-};
+export type Database = NodePgDatabase;
 
-const RETRY_DELAY_MS = 10_000;
-let retryTimer: NodeJS.Timeout | null = null;
-
-function scheduleReconnect(uri: string): void {
-  if (retryTimer) return;
-  retryTimer = setTimeout(() => {
-    retryTimer = null;
-    const state = mongoose.connection.readyState;
-    if (state === mongoose.ConnectionStates.connected || state === mongoose.ConnectionStates.connecting) return;
-    mongoose.connect(uri, CONNECT_OPTIONS).catch((error: Error) => {
-      console.error("[MongoDB] Neuer Verbindungsversuch fehlgeschlagen:", error.message);
-      scheduleReconnect(uri);
-    });
-  }, RETRY_DELAY_MS);
-  retryTimer.unref();
+export interface DatabaseHandle {
+  db: Database;
+  pool: Pool;
+  /** true, wenn die Datenbank innerhalb von 2 Sekunden antwortet (für /api/health). */
+  ping(): Promise<boolean>;
+  close(): Promise<void>;
 }
 
 /**
- * Verbindet mit MongoDB und heilt sich selbst: Schlägt der erste Versuch fehl oder bricht die
- * Verbindung ganz ab, wird im Hintergrund weiter versucht, statt den Prozess hängen zu lassen.
- * (Übernommen aus v1, Stabilitäts-Audit vom 01.07.2026.)
+ * Spalten heißen im TypeScript camelCase und in der Datenbank snake_case. Dieselbe Einstellung
+ * steht in drizzle.config.ts, damit generierte Migrationen und Abfragen zusammenpassen.
  */
-export async function connectDatabase(uri: string): Promise<void> {
-  mongoose.set("strictQuery", true);
-  mongoose.connection.on("disconnected", () => console.error("[MongoDB] Verbindung getrennt"));
-  mongoose.connection.on("reconnected", () => console.info("[MongoDB] Wieder verbunden"));
-  mongoose.connection.on("close", () => scheduleReconnect(uri));
-  try {
-    await mongoose.connect(uri, CONNECT_OPTIONS);
-    console.info("[MongoDB] Verbunden");
-  } catch (error) {
-    console.error("[MongoDB] Erste Verbindung fehlgeschlagen:", (error as Error).message);
-    scheduleReconnect(uri);
-  }
-}
+export const DB_CASING = "snake_case";
 
-export async function disconnectDatabase(): Promise<void> {
-  if (retryTimer) clearTimeout(retryTimer);
-  await mongoose.disconnect();
+/**
+ * Verbindungspool zu PostgreSQL. Anders als bei Mongoose braucht es keine eigene Wiederverbindung:
+ * Der Pool öffnet für jede Abfrage bei Bedarf eine neue Verbindung. Fällt die Datenbank weg,
+ * scheitern nur die Anfragen in dieser Zeit, der Prozess läuft weiter.
+ */
+export function createDatabase(url: string): DatabaseHandle {
+  const pool = new Pool({
+    connectionString: url,
+    max: 20,
+    idleTimeoutMillis: 30_000,
+    connectionTimeoutMillis: 5_000,
+    // Hängende Abfragen dürfen keine Verbindung blockieren
+    statement_timeout: 15_000,
+    application_name: "visit-flow-api",
+  });
+  // Ohne diesen Handler beendet ein Fehler auf einer ruhenden Verbindung den ganzen Prozess
+  pool.on("error", (error) => console.error("[PostgreSQL] Fehler auf ruhender Verbindung:", error.message));
+  const db = drizzle({ client: pool, casing: DB_CASING });
+
+  return {
+    db,
+    pool,
+    async ping() {
+      try {
+        await Promise.race([db.execute(sql`select 1`), new Promise((_, reject) => setTimeout(reject, 2_000).unref())]);
+        return true;
+      } catch {
+        return false;
+      }
+    },
+    close: () => pool.end(),
+  };
 }

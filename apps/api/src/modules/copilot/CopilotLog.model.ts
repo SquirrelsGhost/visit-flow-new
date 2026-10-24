@@ -1,38 +1,34 @@
-import { Schema, model, type Model } from "mongoose";
+import { sql } from "drizzle-orm";
+import { check, index, jsonb, pgTable, text, timestamp } from "drizzle-orm/pg-core";
 import type { SealedValue } from "../../lib/crypto/dataCipher";
+import { sqlList } from "../../lib/db/sqlList";
+import { users } from "../users/User.model";
+
+export const COPILOT_FEEDBACK = ["up", "down"] as const;
 
 /**
  * Ein Austausch mit Enes, damit 👍/👎 einer Antwort zugeordnet werden kann (v1 AiChatLog).
  * Frage und Antwort sind verschlüsselt; 👍-Antworten dienen Enes als Beispiele, was bei diesem
- * Berater wirkt. Eigene Collection `copilotlogs` mit TTL.
+ * Berater wirkt. Nach COPILOT_LOG_DAYS löscht der Aufräum-Job.
  */
-export interface CopilotLogDoc {
-  userId: string;
-  vertical: string;
-  question: SealedValue;
-  reply: SealedValue;
-  feedback: "up" | "down" | null;
-  reason?: string;
-  createdAt: Date;
-}
-
-const DAY_SECONDS = 24 * 60 * 60;
-const sealedShape = { sealed: Number, iv: String, tag: String, data: String };
-
-const copilotLogSchema = new Schema<CopilotLogDoc>(
+export const copilotLogs = pgTable(
+  "copilot_logs",
   {
-    userId: { type: String, required: true, index: true },
-    vertical: { type: String, required: true },
-    question: { type: sealedShape, required: true, _id: false },
-    reply: { type: sealedShape, required: true, _id: false },
-    feedback: { type: String, enum: ["up", "down", null], default: null },
-    reason: { type: String, maxlength: 500 },
-    createdAt: { type: Date, required: true, default: () => new Date() },
+    id: text().primaryKey(),
+    userId: text()
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    vertical: text().notNull(),
+    question: jsonb().$type<SealedValue>().notNull(),
+    reply: jsonb().$type<SealedValue>().notNull(),
+    feedback: text({ enum: COPILOT_FEEDBACK }),
+    reason: text(),
+    createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
   },
-  { collection: "copilotlogs", versionKey: false },
+  (table) => [
+    index("copilot_logs_user_id_created_at_idx").on(table.userId, table.createdAt.desc()),
+    index("copilot_logs_created_at_idx").on(table.createdAt),
+    check("copilot_logs_feedback_valid", sql`${table.feedback} is null or ${table.feedback} in (${sqlList(COPILOT_FEEDBACK)})`),
+    check("copilot_logs_reason_length", sql`char_length(${table.reason}) <= 500`),
+  ],
 );
-
-export function copilotLogModel(retentionDays: number): Model<CopilotLogDoc> {
-  copilotLogSchema.index({ createdAt: 1 }, { expireAfterSeconds: retentionDays * DAY_SECONDS });
-  return model<CopilotLogDoc>("CopilotLog", copilotLogSchema);
-}

@@ -1,30 +1,17 @@
 import { createHash } from "node:crypto";
-import { Schema, model, type Model } from "mongoose";
+import { and, desc, eq, gt, inArray } from "drizzle-orm";
+import type { Database } from "../../config/db";
+import { loginFailures } from "./LoginFailure.model";
 
 /**
  * Brute-Force-Schutz für den Login. Ersetzt die In-Memory-Map plus JSON-Datei aus v1
  * (LoginProtectionService), die pro PM2-Instanz getrennt zählte. Hier zählen alle Instanzen
- * gemeinsam in MongoDB, und ein TTL-Index räumt Fehlversuche nach dem Zeitfenster selbst weg.
+ * gemeinsam in der Datenbank. Abfragen sehen nur das Zeitfenster, alte Zeilen löscht der Aufräum-Job.
  * Gespeichert wird nur ein Hash von IP bzw. E-Mail, nie der Klartext.
  */
 export const LOGIN_WINDOW_MINUTES = 15;
 export const MAX_FAILURES_PER_IP = 5;
 export const MAX_FAILURES_PER_EMAIL = 10;
-
-interface LoginFailureDoc {
-  key: string;
-  at: Date;
-}
-
-const loginFailureSchema = new Schema<LoginFailureDoc>(
-  { key: { type: String, required: true, index: true }, at: { type: Date, required: true } },
-  { collection: "login_failures", versionKey: false },
-);
-loginFailureSchema.index({ at: 1 }, { expireAfterSeconds: LOGIN_WINDOW_MINUTES * 60 });
-
-export function loginFailureModel(): Model<LoginFailureDoc> {
-  return model<LoginFailureDoc>("LoginFailure", loginFailureSchema);
-}
 
 export interface LoginThrottle {
   /** Zeitpunkt, bis zu dem gesperrt ist, oder null. */
@@ -35,10 +22,15 @@ export interface LoginThrottle {
 
 const keyFor = (kind: "ip" | "email", value: string) => createHash("sha256").update(`${kind}:${value}`).digest("hex");
 
-export function mongoLoginThrottle(failures: Model<LoginFailureDoc>): LoginThrottle {
+export function pgLoginThrottle(db: Database): LoginThrottle {
   async function lockFor(key: string, limit: number, now: Date): Promise<Date | null> {
     const since = new Date(now.getTime() - LOGIN_WINDOW_MINUTES * 60_000);
-    const recent = await failures.find({ key, at: { $gt: since } }, { at: 1 }).sort({ at: -1 }).limit(limit).lean().exec();
+    const recent = await db
+      .select({ at: loginFailures.at })
+      .from(loginFailures)
+      .where(and(eq(loginFailures.key, key), gt(loginFailures.at, since)))
+      .orderBy(desc(loginFailures.at))
+      .limit(limit);
     if (recent.length < limit) return null;
     // Gesperrt, bis der älteste der letzten `limit` Fehlversuche aus dem Fenster fällt
     const oldest = recent[recent.length - 1];
@@ -56,13 +48,13 @@ export function mongoLoginThrottle(failures: Model<LoginFailureDoc>): LoginThrot
       return byIp > byEmail ? byIp : byEmail;
     },
     async recordFailure(ip, email, now) {
-      await failures.insertMany([
+      await db.insert(loginFailures).values([
         { key: keyFor("ip", ip), at: now },
         { key: keyFor("email", email), at: now },
       ]);
     },
     async reset(ip, email) {
-      await failures.deleteMany({ key: { $in: [keyFor("ip", ip), keyFor("email", email)] } });
+      await db.delete(loginFailures).where(inArray(loginFailures.key, [keyFor("ip", ip), keyFor("email", email)]));
     },
   };
 }

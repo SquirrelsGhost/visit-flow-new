@@ -1,5 +1,6 @@
-import type { Model } from "mongoose";
-import type { ConsentLogDoc } from "./ConsentLog.model";
+import { desc, eq } from "drizzle-orm";
+import type { Database } from "../../config/db";
+import { consentLogs, type ConsentLogDoc } from "./ConsentLog.model";
 
 /** Speicherzugriff des Consent-Moduls. Der Service kennt nur dieses Interface (testbar ohne Datenbank). */
 export interface ConsentRepository {
@@ -7,13 +8,22 @@ export interface ConsentRepository {
   findByConsentId(consentId: string): Promise<ConsentLogDoc[]>;
 }
 
-export function mongoConsentRepository(model: Model<ConsentLogDoc>): ConsentRepository {
+const columns = {
+  consentId: consentLogs.consentId,
+  version: consentLogs.version,
+  choice: consentLogs.choice,
+  source: consentLogs.source,
+  receivedAt: consentLogs.receivedAt,
+};
+
+export function pgConsentRepository(db: Database): ConsentRepository {
   return {
     async insert(entry) {
-      const created = await model.create(entry);
-      return created.toObject();
+      const [created] = await db.insert(consentLogs).values(entry).returning(columns);
+      if (!created) throw new Error("Consent-Eintrag wurde nicht gespeichert");
+      return created;
     },
     findByConsentId: (consentId) =>
-      model.find({ consentId }, { _id: 0 }).sort({ receivedAt: -1 }).limit(100).lean<ConsentLogDoc[]>().exec(),
+      db.select(columns).from(consentLogs).where(eq(consentLogs.consentId, consentId)).orderBy(desc(consentLogs.receivedAt)).limit(100),
   };
 }

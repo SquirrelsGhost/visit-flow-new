@@ -1,10 +1,10 @@
 import { forbidden } from "../../lib/http/HttpError";
-import type { UserDoc } from "../users/User.model";
+import type { UserRecord } from "../users/User.model";
 
 const deDate = (date: Date) => date.toLocaleString("de-DE", { timeZone: "Europe/Berlin" });
 
 /** true, wenn die Admin-Sperre abgelaufen ist und aufgehoben werden soll. */
-export function blockExpired(user: UserDoc, now: Date): boolean {
+export function blockExpired(user: UserRecord, now: Date): boolean {
   return Boolean(user.isBlocked && user.blockUntil && new Date(user.blockUntil) <= now);
 }
 
@@ -13,7 +13,7 @@ export function blockExpired(user: UserDoc, now: Date): boolean {
  * Anders als v1 erst nach der Passwortprüfung: Sonst verrät die Sperrmeldung ohne Passwort,
  * dass das Konto existiert und warum es gesperrt ist.
  */
-export function assertMayLogin(user: UserDoc, now: Date): void {
+export function assertMayLogin(user: UserRecord, now: Date): void {
   if (user.isBlocked && !blockExpired(user, now)) {
     const until = user.blockUntil ? new Date(user.blockUntil) : null;
     const base = until ? `Ihr Account ist bis ${deDate(until)} gesperrt.` : "Ihr Account wurde permanent gesperrt.";
