@@ -2,7 +2,7 @@ import bcrypt from "bcryptjs";
 import { eq } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { loadEnv } from "../config/env";
-import { newObjectId } from "../lib/db/objectId";
+import { newId } from "../lib/db/ids";
 import { auditLogs } from "../modules/audit/AuditLog.model";
 import { loginFailures } from "../modules/auth/LoginFailure.model";
 import { refreshTokens } from "../modules/auth/RefreshToken.model";
@@ -11,12 +11,11 @@ import { createServices, type Services } from "../services";
 import { createTestDatabase, TEST_DATABASE_URL, type TestDatabase } from "./support/testDatabase";
 
 /**
- * Gegen ein echtes PostgreSQL. Ein aus v1 übernommener Nutzer (bcryptjs-Hash mit $2a$, alte
- * ObjectId als ID) meldet sich an, Refresh-Tokens rotieren in ihrer Kette, Fehlversuche und
+ * Gegen ein echtes PostgreSQL. Ein aus v1 übernommener Nutzer (bcryptjs-Hash mit $2a$) meldet sich an, Refresh-Tokens rotieren in ihrer Kette, Fehlversuche und
  * Audit-Einträge landen in ihren Tabellen.
  */
 const PASSWORD = "v1-passwort";
-const userId = newObjectId();
+const userId = newId();
 const client = { ip: "198.51.100.7", userAgent: "vitest" };
 
 describe.skipIf(!TEST_DATABASE_URL)("Auth gegen PostgreSQL", () => {
@@ -29,16 +28,15 @@ describe.skipIf(!TEST_DATABASE_URL)("Auth gegen PostgreSQL", () => {
     services = createServices(env, database.db, database.ping);
     await database.db.insert(users).values({
       id: userId, email: "v1@example.de", passwordHash: bcrypt.hashSync(PASSWORD, 4).replace(/^\$2b\$/, "$2a$"),
-      name: "V1 Nutzer", role: "teamleiter", isWhitelisted: true, whitelistStatus: "approved", loginAttempts: 3,
-      profile: { dailyPins: [{ street: "Hauptstr." }], billingCity: "Köln" },
+      name: "V1 Nutzer", role: "teamleiter", approvalStatus: "approved", phone: "0221 123",
     });
   });
 
   afterAll(async () => database?.drop());
 
-  it("meldet einen v1-Nutzer an und liefert die Profilfelder aus profile", async () => {
+  it("meldet einen v1-Nutzer an und liefert sein Profil", async () => {
     const result = await services.auth.login({ email: "v1@example.de", password: PASSWORD }, client);
-    expect(result.user).toMatchObject({ id: userId, role: "teamleiter", billingCity: "Köln", dailyPins: [{ street: "Hauptstr." }] });
+    expect(result.user).toMatchObject({ id: userId, role: "teamleiter", phone: "0221 123", isWhitelisted: true });
     expect(result.user).not.toHaveProperty("passwordHash");
     expect(result.showTeamLeiterLiveTracking).toBe(true);
 
@@ -47,10 +45,10 @@ describe.skipIf(!TEST_DATABASE_URL)("Auth gegen PostgreSQL", () => {
     expect(tokens[0]?.tokenHash).toMatch(/^[0-9a-f]{64}$/);
   });
 
-  it("setzt nur die Login-Felder am Nutzer", async () => {
+  it("merkt die letzte Aktivität und lässt den Rest unverändert", async () => {
     const [user] = await database.db.select().from(users).where(eq(users.id, userId));
-    expect(user).toMatchObject({ loginAttempts: 0, name: "V1 Nutzer", profile: { billingCity: "Köln" } });
-    expect(user?.lastActivity).toBeInstanceOf(Date);
+    expect(user).toMatchObject({ name: "V1 Nutzer", phone: "0221 123" });
+    expect(user?.lastActivityAt).toBeInstanceOf(Date);
     expect(user?.passwordHash).toMatch(/^\$2a\$/);
   });
 
@@ -81,13 +79,18 @@ describe.skipIf(!TEST_DATABASE_URL)("Auth gegen PostgreSQL", () => {
   });
 
   it("findet E-Mails unabhängig von Großschreibung, weil nur Kleinbuchstaben gespeichert werden", async () => {
-    await expect(database.db.insert(users).values({ id: newObjectId(), email: "Gross@Example.de", name: "X" })).rejects.toThrow();
+    await expect(database.db.insert(users).values({ id: newId(), email: "Gross@Example.de", name: "X" })).rejects.toThrow();
   });
 
   it("löscht Sitzungen über die Datenschutz-Registry", async () => {
     const outcome = await services.privacy.deleteUser(userId);
     expect(outcome.sessions).toMatchObject({ action: "deleted" });
     expect(await database.db.select().from(refreshTokens).where(eq(refreshTokens.userId, userId))).toHaveLength(0);
+  });
+
+  it("lehnt fremde ID-Formate ab, statt die Datenbank fehlschlagen zu lassen", async () => {
+    await expect(services.auth.profile("65f000000000000000000001")).rejects.toThrow(/nicht gefunden/);
+    expect(await services.access.canAccessUser({ id: userId, email: "v1@example.de", role: "teamleiter" }, "kein-uuid")).toBe(false);
   });
 
   it("meldet die Datenbank im Health-Check", async () => {

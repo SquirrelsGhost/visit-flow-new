@@ -1,8 +1,8 @@
-import { and, desc, eq, inArray, ne, or, isNull } from "drizzle-orm";
+import { and, desc, eq, exists, inArray, or } from "drizzle-orm";
 import type { Database } from "../../config/db";
 import { subscriptions } from "../billing/Subscription.model";
 import { systemSettings } from "../settings/SystemSettings.model";
-import { teamMembers, teams } from "../teams/Team.model";
+import { teamMentors, teams } from "../teams/Team.model";
 import type { UserRecord } from "./User.model";
 import type { UserViewExtras } from "./userView";
 
@@ -29,7 +29,7 @@ export function pgUserExtras(db: Database): UserExtrasSource {
       .from(subscriptions)
       .where(and(
         eq(subscriptions.userId, user.id),
-        or(isNull(subscriptions.type), ne(subscriptions.type, "addon")),
+        eq(subscriptions.isAddon, false),
         inArray(subscriptions.status, ACTIVE_STATES),
       ))
       .orderBy(desc(subscriptions.createdAt))
@@ -40,11 +40,12 @@ export function pgUserExtras(db: Database): UserExtrasSource {
 
   async function isTrioHeim(user: UserRecord): Promise<boolean> {
     if (mentionsTrio(user.email)) return true;
-    const memberOf = db.select({ teamId: teamMembers.teamId }).from(teamMembers).where(eq(teamMembers.userId, user.id));
+    const isMentor = db.select().from(teamMentors).where(and(eq(teamMentors.teamId, teams.id), eq(teamMentors.userId, user.id)));
+    const ownTeam = user.teamId ? [eq(teams.id, user.teamId)] : [];
     const [team] = await db
       .select({ name: teams.name })
       .from(teams)
-      .where(and(eq(teams.isActive, true), or(eq(teams.teamLeaderId, user.id), inArray(teams.id, memberOf))))
+      .where(and(eq(teams.isActive, true), or(eq(teams.teamLeaderId, user.id), exists(isMentor), ...ownTeam)))
       .limit(1);
     return mentionsTrio(team?.name);
   }

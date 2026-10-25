@@ -47,11 +47,13 @@ Ausnahmen vom Zeilenlimit stehen in `MAX_LINES_AUSNAHMEN` in `eslint.config.mjs`
 - Tabellen werden in `<Name>.model.ts` mit Drizzle beschrieben (Spalten camelCase im Code, snake_case in der Datenbank).
 - Jede Schemaänderung: Model ändern, `npm run db:generate --workspace=@visit-flow/api`, die erzeugte SQL-Datei in `apps/api/drizzle/` lesen und mit committen. Die CI bricht ab, wenn Model und Migrationen auseinanderlaufen.
 - Migrationen nie nachträglich ändern, nur neue anhängen. Eingespielt wird mit `npm run db:migrate` einmal pro Deploy, nicht beim Start jeder Instanz.
-- Verweise sind Fremdschlüssel mit bewusst gewähltem `onDelete`. Feste Wertelisten bekommen einen CHECK-Constraint (`sqlList()`).
-- IDs von Nutzern, Teams und allem, was aus v1 kommt, sind die alten ObjectIds als Text; neue bekommen dasselbe Format über `newObjectId()`. Reine Protokolltabellen nutzen eine fortlaufende `bigint`-ID.
+- Verweise sind Fremdschlüssel mit bewusst gewähltem `onDelete`. Feste Wertelisten sind Postgres-Enums (`pgEnum`), Regeln über mehrere Spalten CHECK-Constraints.
+- Jede Information hat genau eine Quelle (kein doppeltes `member_ids` neben `team_id` wie in v1). Keine JSON-Sammelspalten für Felder, die eigentlich Spalten sind; `jsonb` nur für wirklich freie Daten (z. B. Audit-Metadaten).
+- IDs sind `uuid` (UUIDv7 über `newId()` aus `lib/db/ids.ts`). IDs aus Anfragen vor der Abfrage mit `isUuid()` prüfen. Reine Protokolltabellen nutzen eine fortlaufende `bigint`-ID.
+- Fachliche Nutzerfelder (Tagesstatus, Pins, Rechnungsadresse …) gehören in die Tabellen ihres Moduls, nicht in `users`.
 - Services kennen nur ihr Repository-Interface. SQL steht ausschließlich in Repositories und Models.
 - Access-Tokens haben dasselbe Format wie in v1 (HS256, `{ id, email, role }`, 15 Minuten) und dasselbe `JWT_SECRET`.
-- v1 ist strikt read-only. Daten aus v1 kommen nur über das Übernahmeskript `apps/api/src/migration/v1/` (siehe `docs/umstieg-postgres.md`). Wer ein Modul portiert, ergänzt dort den Schritt für seine Collections.
+- v1 ist strikt read-only. Daten aus v1 kommen nur über das Übernahmeskript `apps/api/src/migration/v1/` (siehe `docs/umstieg-postgres.md`). Wer ein Modul portiert, ergänzt dort den Schritt für seine Collections und übersetzt v1-IDs über die `IdMap`.
 
 ## 5. Datenschutz (Privacy by Design)
 

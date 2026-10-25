@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { purgeExpired } from "../lib/db/retention";
-import { newObjectId } from "../lib/db/objectId";
+import { newId } from "../lib/db/ids";
 import { auditLogs } from "../modules/audit/AuditLog.model";
 import { auditRetention } from "../modules/audit/auditRetention";
 import { authRetention } from "../modules/auth/authRetention";
@@ -22,7 +22,7 @@ describe.skipIf(!TEST_DATABASE_URL)("Löschfristen in PostgreSQL", () => {
 
   beforeAll(async () => {
     database = await createTestDatabase();
-    const userId = newObjectId();
+    const userId = newId();
     await database.db.insert(users).values({ id: userId, email: "r@example.de", name: "R" });
     await database.db.insert(loginFailures).values([{ key: "alt", at: ago(16 * MIN) }, { key: "neu", at: ago(5 * MIN) }]);
     await database.db.insert(refreshTokens).values([

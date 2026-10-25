@@ -1,58 +1,72 @@
 import { sql } from "drizzle-orm";
-import { boolean, check, index, integer, jsonb, pgTable, text, timestamp, type AnyPgColumn } from "drizzle-orm/pg-core";
+import { boolean, check, date, index, pgEnum, pgTable, text, timestamp, uuid, type AnyPgColumn } from "drizzle-orm/pg-core";
 import { ROLES } from "@visit-flow/shared/roles";
-import { sqlList } from "../../lib/db/sqlList";
+import { newId } from "../../lib/db/ids";
 import { teams } from "../teams/Team.model";
 
-export const WHITELIST_STATES = ["pending", "approved", "rejected"] as const;
+export const APPROVAL_STATES = ["pending", "approved", "rejected"] as const;
+export type ApprovalStatus = (typeof APPROVAL_STATES)[number];
+
+export const userRole = pgEnum("user_role", ROLES);
+/** Freigabe durch Admin oder Teamleiter. Ersetzt `isWhitelisted` + `whitelistStatus` aus v1. */
+export const approvalStatus = pgEnum("approval_status", APPROVAL_STATES);
+
+const at = () => timestamp({ withTimezone: true });
 
 /**
- * Nutzer. Die ID ist die ObjectId aus v1 als Text (neue Nutzer bekommen dasselbe Format, siehe
- * `newObjectId`), damit Access-Tokens und Refresh-Cookies den Umzug überleben.
- *
- * `profile` hält vorübergehend die v1-Profilfelder, die noch kein v2-Modul besitzt (Tagesbericht,
- * Rechnungsadresse, Social-Links …). Wird ein Modul portiert, zieht es seine Felder in echte
- * Spalten oder eigene Tabellen um, und `profile` schrumpft. Neue Felder kommen nie dort hinein.
+ * Konto und Stammdaten eines Nutzers. Hier steht nur, was zum Konto gehört. Fachliche Felder
+ * (Tagesstatus, Tagesbericht, Rechnungsadresse, Pins, Battle …) bekommt das jeweilige Modul in
+ * eigenen Tabellen, sobald es portiert ist.
  */
 export const users = pgTable(
   "users",
   {
-    id: text().primaryKey(),
-    /** Altes Feld `id` aus v1, über das manche Visit-Daten Nutzer referenzieren. */
-    legacyId: text().unique(),
+    id: uuid().primaryKey().$defaultFn(() => newId()),
     email: text().notNull().unique(),
     passwordHash: text(),
     name: text().notNull(),
-    role: text({ enum: ROLES }).notNull().default("berater"),
-    roles: text({ enum: ROLES }).array().notNull().default(sql`'{}'::text[]`),
+    nickname: text(),
+    nicknameChangedAt: at(),
+    phone: text(),
+    profilePictureUrl: text(),
+    role: userRole().notNull().default("berater"),
+    /** Zusätzliche Rollen neben der Hauptrolle, z. B. ein Berater, der auch Mentor ist. */
+    extraRoles: userRole().array().notNull().default(sql`'{}'`),
+    approvalStatus: approvalStatus().notNull().default("pending"),
+    /** false = vom Admin deaktiviert. */
     isActive: boolean().notNull().default(true),
-    isBlocked: boolean().notNull().default(false),
-    blockedAt: timestamp({ withTimezone: true }),
-    blockUntil: timestamp({ withTimezone: true }),
+    /** Gesetzt = gesperrt; ohne `blockedUntil` dauerhaft. */
+    blockedAt: at(),
+    blockedUntil: at(),
     blockReason: text(),
-    isWhitelisted: boolean().notNull().default(false),
-    whitelistStatus: text({ enum: WHITELIST_STATES }),
-    teamId: text().references((): AnyPgColumn => teams.id, { onDelete: "set null" }),
-    strukturleiterId: text().references((): AnyPgColumn => users.id, { onDelete: "set null" }),
-    mentorId: text().references((): AnyPgColumn => users.id, { onDelete: "set null" }),
+    teamId: uuid().references((): AnyPgColumn => teams.id, { onDelete: "set null" }),
+    mentorId: uuid().references((): AnyPgColumn => users.id, { onDelete: "set null" }),
+    strukturleiterId: uuid().references((): AnyPgColumn => users.id, { onDelete: "set null" }),
+    vodafoneContractStart: date({ mode: "date" }),
     paymentRequired: boolean().notNull().default(false),
-    giftedUntil: timestamp({ withTimezone: true }),
-    vodafoneContractStart: timestamp({ withTimezone: true }),
-    loginAttempts: integer().notNull().default(0),
-    lockedUntil: timestamp({ withTimezone: true }),
-    lastActivity: timestamp({ withTimezone: true }),
-    profile: jsonb().$type<Record<string, unknown>>().notNull().default({}),
-    createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
-    updatedAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+    giftedUntil: at(),
+    emailVerifiedAt: at(),
+    termsAcceptedVersion: text(),
+    termsAcceptedAt: at(),
+    isCompanyAccount: boolean().notNull().default(false),
+    companyName: text(),
+    verifiedCompanyEmail: text(),
+    whatsappNumber: text(),
+    instagramUrl: text(),
+    tiktokUrl: text(),
+    facebookUrl: text(),
+    referralCode: text().unique(),
+    referredById: uuid().references((): AnyPgColumn => users.id, { onDelete: "set null" }),
+    lastActivityAt: at(),
+    createdAt: at().notNull().defaultNow(),
+    updatedAt: at().notNull().defaultNow(),
   },
   (table) => [
     check("users_email_lowercase", sql`${table.email} = lower(${table.email})`),
-    check("users_role_valid", sql`${table.role} in (${sqlList(ROLES)})`),
-    check("users_roles_valid", sql`${table.roles} <@ array[${sqlList(ROLES)}]::text[]`),
-    check("users_whitelist_status_valid", sql`${table.whitelistStatus} in (${sqlList(WHITELIST_STATES)})`),
+    check("users_block_until_needs_block", sql`${table.blockedUntil} is null or ${table.blockedAt} is not null`),
     index("users_team_id_idx").on(table.teamId),
-    index("users_strukturleiter_id_idx").on(table.strukturleiterId),
     index("users_mentor_id_idx").on(table.mentorId),
+    index("users_strukturleiter_id_idx").on(table.strukturleiterId),
   ],
 );
 

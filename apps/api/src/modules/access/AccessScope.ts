@@ -45,8 +45,6 @@ export class AccessScope {
 
     const accessible = await this.accessibleUserIds(requester);
     if (accessible === null || accessible.includes(targetUserId)) return true;
-    const target = await this.source.userByAnyId(targetUserId);
-    if (target && accessible.includes(target.id)) return true;
 
     this.onDenied("USER", targetUserId, requester);
     return false;

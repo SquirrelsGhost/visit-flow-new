@@ -1,4 +1,4 @@
-import { bigint, index, jsonb, pgTable, text, timestamp } from "drizzle-orm/pg-core";
+import { bigint, index, jsonb, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
 
 /**
  * Sicherheitsprotokoll (Login, Token-Missbrauch, verweigerter Teamzugriff). Die volle IP wird
@@ -11,7 +11,7 @@ export const auditLogs = pgTable(
     id: bigint({ mode: "number" }).primaryKey().generatedAlwaysAsIdentity(),
     action: text().notNull(),
     category: text().notNull(),
-    actorUserId: text(),
+    actorUserId: uuid(),
     actorEmail: text(),
     actorIp: text(),
     actorUserAgent: text(),

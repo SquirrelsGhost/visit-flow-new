@@ -1,72 +1,76 @@
 import { isRole, type Role } from "@visit-flow/shared/roles";
-import { WHITELIST_STATES, type NewUserRow } from "../../../modules/users/User.model";
-import { DEFAULTS, PASSTHROUGH } from "../../../modules/users/userView";
-import { idOf, objectIdDate, toDate, toJson, toText } from "../convert";
+import type { ApprovalStatus, NewUserRow } from "../../../modules/users/User.model";
+import { idOf, objectIdDate, toDate, toText } from "../convert";
+import type { UserRefs } from "../context";
 import type { MigrationReport } from "../report";
 import type { V1Doc } from "../source";
 
-const COLUMN_KEYS = new Set([
-  "email", "name", "role", "roles", "isActive", "isBlocked", "strukturleiterId", "mentorId", "teamId",
-  "lockedUntil", "vodafoneContractStart", "giftedUntil", "createdAt", "updatedAt",
-]);
-
-/**
- * v1-Profilfelder ohne eigene Spalte. Bewusst nicht übernommen: lastIpAddress, userAgent und
- * deviceIds (Datensparsamkeit). stripeCustomerId bleibt in v1, bis das Abrechnungsmodul portiert ist.
- */
-export const PROFILE_KEYS = [...new Set([...PASSTHROUGH, ...Object.keys(DEFAULTS)])].filter((key) => !COLUMN_KEYS.has(key));
-
 export interface ConvertedUser {
-  row: NewUserRow;
-  refs: { teamId: string | null; mentorId: string | null; strukturleiterId: string | null };
+  v1Id: string;
+  row: Omit<NewUserRow, "id">;
+  refs: UserRefs;
 }
 
-const isWhitelistStatus = (value: unknown): value is (typeof WHITELIST_STATES)[number] =>
-  typeof value === "string" && (WHITELIST_STATES as readonly string[]).includes(value);
+function approval(doc: V1Doc): ApprovalStatus {
+  if (doc.whitelistStatus === "rejected") return "rejected";
+  return doc.isWhitelisted === true && doc.whitelistStatus === "approved" ? "approved" : "pending";
+}
 
-/** Wandelt ein v1-Nutzerdokument um. null, wenn ID oder E-Mail fehlen. */
+const version = (value: unknown) => (typeof value === "number" ? String(value) : toText(value));
+
+/**
+ * Wandelt ein v1-Nutzerdokument in eine Zeile für `users` um. null, wenn ID oder E-Mail fehlen.
+ * Übernommen wird nur, was zum Konto gehört. Fachliche Felder (Tagesstatus, Pins, Rechnungsadresse …)
+ * holt der Schritt des jeweiligen Moduls. Nie übernommen: IP, User-Agent, Geräte-IDs.
+ */
 export function convertUser(doc: V1Doc, report: MigrationReport, now: Date): ConvertedUser | null {
-  const id = idOf(doc._id);
+  const v1Id = idOf(doc._id);
   const email = typeof doc.email === "string" ? doc.email.trim().toLowerCase() : "";
-  if (!id || !email) {
-    report.warn("Nutzer ohne ID oder E-Mail übersprungen", id ?? "?");
+  if (!v1Id || !email) {
+    report.warn("Nutzer ohne ID oder E-Mail übersprungen", v1Id ?? "?");
     return null;
   }
   let role: Role = "berater";
   if (isRole(doc.role)) role = doc.role;
-  else report.warn("Unbekannte Rolle, als berater übernommen", id);
-
-  const profile: Record<string, unknown> = {};
-  for (const key of PROFILE_KEYS) if (doc[key] !== undefined) profile[key] = toJson(doc[key]);
-  const legacyId = idOf(doc.id);
-  const createdAt = toDate(doc.createdAt) ?? objectIdDate(id) ?? now;
+  else report.warn("Unbekannte Rolle, als berater übernommen", v1Id);
+  const blocked = doc.isBlocked === true;
+  const createdAt = toDate(doc.createdAt) ?? objectIdDate(v1Id) ?? now;
 
   return {
+    v1Id,
     row: {
-      id,
-      legacyId: legacyId && legacyId !== id ? legacyId : null,
       email,
       passwordHash: toText(doc.password),
       name: toText(doc.name) ?? email.split("@")[0] ?? email,
+      nickname: toText(doc.nickname),
+      nicknameChangedAt: toDate(doc.nicknameLastChangedAt),
+      phone: toText(doc.phone),
+      profilePictureUrl: toText(doc.profilePicture),
       role,
-      roles: Array.isArray(doc.roles) ? [...new Set(doc.roles.filter(isRole))] : [],
+      extraRoles: Array.isArray(doc.roles) ? [...new Set(doc.roles.filter(isRole))].filter((r) => r !== role) : [],
+      approvalStatus: approval(doc),
       isActive: doc.isActive !== false,
-      isBlocked: doc.isBlocked === true,
-      blockedAt: toDate(doc.blockedAt),
-      blockUntil: toDate(doc.blockUntil),
-      blockReason: toText(doc.blockReason),
-      isWhitelisted: doc.isWhitelisted === true,
-      whitelistStatus: isWhitelistStatus(doc.whitelistStatus) ? doc.whitelistStatus : null,
+      blockedAt: blocked ? (toDate(doc.blockedAt) ?? now) : null,
+      blockedUntil: blocked ? toDate(doc.blockUntil) : null,
+      blockReason: blocked ? toText(doc.blockReason) : null,
+      vodafoneContractStart: toDate(doc.vodafoneContractStart),
       paymentRequired: doc.paymentRequired === true,
       giftedUntil: toDate(doc.giftedUntil),
-      vodafoneContractStart: toDate(doc.vodafoneContractStart),
-      loginAttempts: typeof doc.loginAttempts === "number" ? doc.loginAttempts : 0,
-      lockedUntil: toDate(doc.lockedUntil),
-      lastActivity: toDate(doc.lastActivity),
-      profile,
+      emailVerifiedAt: doc.emailVerified === true ? (toDate(doc.emailVerifiedAt) ?? createdAt) : null,
+      termsAcceptedVersion: version(doc.termsAcceptedVersion),
+      termsAcceptedAt: toDate(doc.termsAcceptedAt),
+      isCompanyAccount: doc.isCompanyAccount === true,
+      companyName: toText(doc.companyName),
+      verifiedCompanyEmail: toText(doc.verifiedCompanyEmail),
+      whatsappNumber: toText(doc.whatsappNumber),
+      instagramUrl: toText(doc.instagramUrl),
+      tiktokUrl: toText(doc.tiktokUrl),
+      facebookUrl: toText(doc.facebookUrl),
+      referralCode: toText(doc.referralCode),
+      lastActivityAt: toDate(doc.lastActivity),
       createdAt,
       updatedAt: toDate(doc.updatedAt) ?? createdAt,
     },
-    refs: { teamId: idOf(doc.teamId), mentorId: idOf(doc.mentorId), strukturleiterId: idOf(doc.strukturleiterId) },
+    refs: { teamId: idOf(doc.teamId), mentorId: idOf(doc.mentorId), strukturleiterId: idOf(doc.strukturleiterId), referredById: idOf(doc.referredBy) },
   };
 }

@@ -1,5 +1,6 @@
 import { eq, getTableColumns } from "drizzle-orm";
 import type { Database } from "../../config/db";
+import { isUuid } from "../../lib/db/ids";
 import { users, type UserRecord } from "./User.model";
 
 export interface UserRepository {
@@ -8,7 +9,7 @@ export interface UserRepository {
   findById(id: string): Promise<UserRecord | null>;
   /** Hebt eine abgelaufene Admin-Sperre auf (wie v1 beim Login). */
   clearExpiredBlock(id: string): Promise<void>;
-  /** Setzt die alten Fehlversuchs-Zähler von v1 zurück und merkt die letzte Aktivität. */
+  /** Merkt die letzte Aktivität. */
   markLoginSuccess(id: string, now: Date): Promise<void>;
 }
 
@@ -22,17 +23,18 @@ export function pgUserRepository(db: Database): UserRepository {
       return row ?? null;
     },
     async findById(id) {
+      if (!isUuid(id)) return null;
       const [row] = await db.select(publicColumns).from(users).where(eq(users.id, id)).limit(1);
       return row ?? null;
     },
     async clearExpiredBlock(id) {
       await db
         .update(users)
-        .set({ isBlocked: false, blockReason: null, blockedAt: null, blockUntil: null, updatedAt: new Date() })
+        .set({ blockedAt: null, blockedUntil: null, blockReason: null, updatedAt: new Date() })
         .where(eq(users.id, id));
     },
     async markLoginSuccess(id, now) {
-      await db.update(users).set({ loginAttempts: 0, lockedUntil: null, lastActivity: now, updatedAt: now }).where(eq(users.id, id));
+      await db.update(users).set({ lastActivityAt: now, updatedAt: now }).where(eq(users.id, id));
     },
   };
 }

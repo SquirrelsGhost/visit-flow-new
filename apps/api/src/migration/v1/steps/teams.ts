@@ -1,75 +1,64 @@
-import { areas, areaTeams } from "../../../modules/teams/Area.model";
-import { teamMembers, teams } from "../../../modules/teams/Team.model";
+import { areas } from "../../../modules/teams/Area.model";
+import { teamMentors, teams } from "../../../modules/teams/Team.model";
 import { chunk, idOf, objectIdDate, toDate } from "../convert";
 import type { StepContext } from "../context";
 import type { V1Doc } from "../source";
 
-const ids = (value: unknown): string[] => (Array.isArray(value) ? value.map(idOf).filter((id): id is string => id !== null) : []);
-const createdAt = (doc: V1Doc, id: string, now: Date) => toDate(doc.created_at ?? doc.createdAt) ?? objectIdDate(id) ?? now;
+const idList = (value: unknown): string[] => (Array.isArray(value) ? value.map(idOf).filter((id): id is string => id !== null) : []);
+const createdAt = (doc: V1Doc, v1Id: string, now: Date) => toDate(doc.created_at ?? doc.createdAt) ?? objectIdDate(v1Id) ?? now;
+const nameOf = (doc: V1Doc) => (typeof doc.name === "string" ? doc.name : "");
 
-/** Schritt 2: Teams mit Mitgliedern und Mentoren, danach Gebiete mit ihren Teams. */
-export async function migrateTeams(ctx: StepContext): Promise<void> {
-  const knownUser = (id: string | null, teamId: string, kind: string) => {
-    if (!id) return null;
-    if (ctx.userIds.has(id)) return id;
-    ctx.report.warn(`Team verweist auf fehlende(n) ${kind}`, teamId);
-    return null;
-  };
-  const teamAreas: { areaId: string; teamId: string }[] = [];
-  const members: (typeof teamMembers.$inferInsert)[] = [];
-
-  for await (const doc of ctx.source.read("teams")) {
-    const id = idOf(doc._id);
-    if (!id) continue;
-    await ctx.tx.insert(teams).values({
-      id,
-      name: typeof doc.name === "string" ? doc.name : "",
-      teamLeaderId: knownUser(idOf(doc.team_leader_id), id, "Teamleiter"),
-      isActive: doc.is_active !== false,
-      createdAt: createdAt(doc, id, ctx.now),
-      updatedAt: toDate(doc.updated_at ?? doc.updatedAt) ?? createdAt(doc, id, ctx.now),
-    });
-    ctx.teamIds.add(id);
-    ctx.report.count("teams");
-    const areaId = idOf(doc.area_id);
-    if (areaId) teamAreas.push({ areaId, teamId: id });
-    for (const [role, list] of [["member", doc.member_ids], ["mentor", doc.mentor_ids]] as const) {
-      for (const userId of new Set(ids(list))) {
-        if (knownUser(userId, id, role === "member" ? "Mitglied" : "Mentor")) members.push({ teamId: id, userId, role });
-      }
+/** Schritt 2: Gebiete mit Gebietsmanager. Gibt zurück, welches Gebiet laut `team_ids` welche Teams hatte. */
+export async function migrateAreas(ctx: StepContext): Promise<Map<string, string>> {
+  const areaOfTeam = new Map<string, string>();
+  for await (const doc of ctx.source.read("areas")) {
+    const v1Id = idOf(doc._id);
+    if (!v1Id) continue;
+    const managerV1 = idOf(doc.manager_id);
+    const managerId = ctx.ids.get("users", managerV1);
+    if (managerV1 && !managerId) ctx.report.warn("Gebiet verweist auf fehlenden Gebietsmanager", v1Id);
+    const id = ctx.ids.assign("areas", v1Id, createdAt(doc, v1Id, ctx.now));
+    await ctx.tx.insert(areas).values({ id, name: nameOf(doc), managerId, isActive: doc.is_active !== false, createdAt: createdAt(doc, v1Id, ctx.now) });
+    ctx.report.count("areas");
+    for (const teamV1 of idList(doc.team_ids)) {
+      if (areaOfTeam.has(teamV1)) ctx.report.warn("Team in mehreren Gebieten, erstes behalten", teamV1);
+      else areaOfTeam.set(teamV1, id);
     }
   }
-  for (const part of chunk(members)) await ctx.tx.insert(teamMembers).values(part);
-  ctx.report.count("team_members", members.length);
-  await migrateAreas(ctx, teamAreas);
+  return areaOfTeam;
 }
 
-async function migrateAreas(ctx: StepContext, fromTeams: { areaId: string; teamId: string }[]): Promise<void> {
-  const links = new Map<string, { areaId: string; teamId: string }>();
-  const areaIds = new Set<string>();
-  for await (const doc of ctx.source.read("areas")) {
-    const id = idOf(doc._id);
-    if (!id) continue;
-    const managerId = idOf(doc.manager_id);
-    if (managerId && !ctx.userIds.has(managerId)) ctx.report.warn("Gebiet verweist auf fehlenden Gebietsmanager", id);
-    await ctx.tx.insert(areas).values({
+/** Schritt 3: Teams mit Teamleiter, Gebiet und Mentoren. Mitglieder kommen über `users.team_id`. */
+export async function migrateTeams(ctx: StepContext, areaOfTeam: Map<string, string>): Promise<void> {
+  const mentors: (typeof teamMentors.$inferInsert)[] = [];
+  for await (const doc of ctx.source.read("teams")) {
+    const v1Id = idOf(doc._id);
+    if (!v1Id) continue;
+    const leaderV1 = idOf(doc.team_leader_id);
+    const teamLeaderId = ctx.ids.get("users", leaderV1);
+    if (leaderV1 && !teamLeaderId) ctx.report.warn("Team verweist auf fehlenden Teamleiter", v1Id);
+    const id = ctx.ids.assign("teams", v1Id, createdAt(doc, v1Id, ctx.now));
+    await ctx.tx.insert(teams).values({
       id,
-      name: typeof doc.name === "string" ? doc.name : "",
-      managerId: managerId && ctx.userIds.has(managerId) ? managerId : null,
+      name: nameOf(doc),
+      teamLeaderId,
+      // v1 hielt die Zuordnung an zwei Stellen; `teams.area_id` gewinnt
+      areaId: ctx.ids.get("areas", idOf(doc.area_id)) ?? areaOfTeam.get(v1Id) ?? null,
       isActive: doc.is_active !== false,
-      createdAt: createdAt(doc, id, ctx.now),
+      createdAt: createdAt(doc, v1Id, ctx.now),
+      updatedAt: toDate(doc.updated_at ?? doc.updatedAt) ?? createdAt(doc, v1Id, ctx.now),
     });
-    areaIds.add(id);
-    ctx.report.count("areas");
-    for (const teamId of ids(doc.team_ids)) links.set(`${id}:${teamId}`, { areaId: id, teamId });
+    ctx.report.count("teams");
+    for (const memberV1 of new Set(idList(doc.member_ids))) {
+      const userId = ctx.ids.get("users", memberV1);
+      if (userId) ctx.memberOf.set(userId, [...(ctx.memberOf.get(userId) ?? []), id]);
+    }
+    for (const mentorV1 of new Set(idList(doc.mentor_ids))) {
+      const userId = ctx.ids.get("users", mentorV1);
+      if (userId) mentors.push({ teamId: id, userId });
+      else ctx.report.warn("Team verweist auf fehlenden Mentor", v1Id);
+    }
   }
-  // v1 hielt die Zuordnung an zwei Stellen, hier werden beide zusammengeführt
-  for (const link of fromTeams) links.set(`${link.areaId}:${link.teamId}`, link);
-  const valid = [...links.values()].filter((link) => {
-    const ok = areaIds.has(link.areaId) && ctx.teamIds.has(link.teamId);
-    if (!ok) ctx.report.warn("Gebiet-Team-Zuordnung mit fehlendem Ziel übersprungen", `${link.areaId}/${link.teamId}`);
-    return ok;
-  });
-  for (const part of chunk(valid)) await ctx.tx.insert(areaTeams).values(part);
-  ctx.report.count("area_teams", valid.length);
+  for (const part of chunk(mentors)) await ctx.tx.insert(teamMentors).values(part);
+  ctx.report.count("team_mentors", mentors.length);
 }

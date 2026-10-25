@@ -8,7 +8,7 @@ import type { UserExtrasSource } from "../users/UserExtras";
 import type { UserRecord } from "../users/User.model";
 import type { UserRepository } from "../users/UserRepository";
 import { toUserView, type UserView } from "../users/userView";
-import { assertMayLogin, blockExpired } from "./loginChecks";
+import { assertMayLogin, blockExpired, isBlocked } from "./loginChecks";
 import type { LoginThrottle } from "./loginThrottle";
 import type { RefreshTokenStore } from "./refreshTokens";
 
@@ -67,7 +67,7 @@ export class AuthService {
     try {
       assertMayLogin(user, now);
     } catch (error) {
-      await audit.security({ action: "LOGIN_BLOCKED", ...actor, userId, metadata: { whitelistStatus: user.whitelistStatus } });
+      await audit.security({ action: "LOGIN_BLOCKED", ...actor, userId, metadata: { approvalStatus: user.approvalStatus } });
       throw error;
     }
 
@@ -94,7 +94,7 @@ export class AuthService {
     }
     const user = await this.deps.users.findById(result.userId);
     // Gesperrte und deaktivierte Konten bekommen keine neuen Tokens (wie v1)
-    if (!user || user.isActive === false || (user.isBlocked && !blockExpired(user, now))) {
+    if (!user || !user.isActive || isBlocked(user, now)) {
       throw unauthorized("Sitzung abgelaufen, bitte erneut anmelden");
     }
     const refreshToken = await this.deps.tokens.issue(result.userId, now, result.familyId);

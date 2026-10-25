@@ -1,4 +1,4 @@
-import { bigint, boolean, index, pgTable, text, timestamp } from "drizzle-orm/pg-core";
+import { bigint, boolean, index, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
 import { users } from "../users/User.model";
 
 /**
@@ -11,7 +11,7 @@ export const refreshTokens = pgTable(
   {
     id: bigint({ mode: "number" }).primaryKey().generatedAlwaysAsIdentity(),
     tokenHash: text().notNull().unique(),
-    userId: text().notNull().references(() => users.id, { onDelete: "cascade" }),
+    userId: uuid().notNull().references(() => users.id, { onDelete: "cascade" }),
     familyId: text().notNull(),
     createdAt: timestamp({ withTimezone: true }).notNull(),
     expiresAt: timestamp({ withTimezone: true }).notNull(),

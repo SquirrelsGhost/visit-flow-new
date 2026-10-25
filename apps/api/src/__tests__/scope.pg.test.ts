@@ -36,15 +36,11 @@ describe.skipIf(!TEST_DATABASE_URL)("Team-Abgrenzung und Profil-Ergänzungen in 
     expect(await scope.canAccessUser(requester(ids.gm, "gebietsmanager"), ids.mentee)).toBe(false);
   });
 
-  it("findet Nutzer auch über die alte v1-ID", async () => {
-    expect(await scope.canAccessUser(requester(ids.memberA, "berater"), "legacy-mentee")).toBe(true);
-  });
-
   it("Admin ohne Team sieht alle", async () => {
     expect(await scope.accessibleUserIds(requester(ids.admin, "admin"))).toBeNull();
   });
 
-  it("erkennt Trio-Heim über das Team und den Abo-Status wie v1", async () => {
+  it("erkennt Trio-Heim über das Team und ignoriert Zusatzpakete beim Abo-Status", async () => {
     const usersRepo = pgUserRepository(database.db);
     const extras = pgUserExtras(database.db);
     const mentee = await usersRepo.findById(ids.mentee);
@@ -52,8 +48,8 @@ describe.skipIf(!TEST_DATABASE_URL)("Team-Abgrenzung und Profil-Ergänzungen in 
     expect(mentee && (await extras.forUser(mentee))).toEqual({ subscriptionStatus: "none", isTrioHeim: true });
 
     await database.db.insert(subscriptions).values([
-      { id: "s-addon", userId: ids.memberB, planId: "addon-x", status: "active", type: "addon", createdAt: new Date("2026-10-05") },
-      { id: "s-main", userId: ids.memberB, planId: "pro-monthly", status: "trialing", createdAt: new Date("2026-10-01") },
+      { userId: ids.memberB, planId: "addon-x", status: "active", isAddon: true, createdAt: new Date("2026-10-05") },
+      { userId: ids.memberB, planId: "pro-monthly", status: "trialing", createdAt: new Date("2026-10-01") },
     ]);
     expect(memberB && (await extras.forUser(memberB))).toEqual({ subscriptionStatus: "trialing", isTrioHeim: false });
   });

@@ -5,7 +5,8 @@ import { ROLES, type Role } from "@visit-flow/shared/roles";
 /**
  * Access-Token im selben Format wie v1 (server/src/middleware/auth.ts):
  * HS256, Payload { id, email, role }, 15 Minuten gültig, als `Authorization: Bearer`.
- * Beide Systeme nutzen dasselbe JWT_SECRET, damit ein Login in v1 auch in v2 gilt und umgekehrt.
+ * `id` ist die UUID aus v2. Ein altes v1-Token (ObjectId) gilt als ungültig, der Client holt
+ * sich dann mit dem Refresh-Cookie ein neues.
  */
 export const ACCESS_TOKEN_TTL = "15m";
 
@@ -16,7 +17,7 @@ export interface AuthUser {
 }
 
 const payloadSchema = z.object({
-  id: z.string().min(1),
+  id: z.uuid(),
   email: z.string().email(),
   role: z.enum(ROLES),
 });
