@@ -59,7 +59,7 @@ Bewusst nicht übernommen: `login_failures` (nach 15 Minuten wertlos), `audit_lo
 read-only Archiv 90 Tage abrufbar), `consentlogs` (v2 war noch nicht live).
 
 Jedes weitere Modul hängt bei seiner Portierung einen Schritt in `migrateV1.ts` ein, übersetzt v1-IDs
-über `ctx.ids` und bekommt einen Test in `migrationV1.pg.test.ts`. Offen sind unter anderem Fahrtenbuch, Enes-Gedächtnis, `userconsents`
+über `ctx.ids` und bekommt einen Test in `migrationV1.pg.test.ts`. Das Fahrtenbuch braucht keinen Schritt: v1 hatte es nur im localStorage, die App lädt es beim ersten Abgleich hoch. Offen sind unter anderem Enes-Gedächtnis, `userconsents`
 (GPS-Widerspruch, rechtlich wichtig), Visits/Leads, Battle, Abrechnung.
 
 ## Ablauf am Umstiegstag

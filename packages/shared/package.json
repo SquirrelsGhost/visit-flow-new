@@ -8,7 +8,8 @@
     "./roles": "./src/auth/roles.ts",
     "./consent": "./src/consent/consent.ts",
     "./consentSchema": "./src/consent/consentSchema.ts",
-    "./auth": "./src/auth/authSchemas.ts"
+    "./auth": "./src/auth/authSchemas.ts",
+    "./logbookSchema": "./src/logbook/logbookSchema.ts"
   },
   "scripts": {
     "typecheck": "tsc -p tsconfig.json",
