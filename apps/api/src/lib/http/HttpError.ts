@@ -17,6 +17,6 @@ export const unauthorized = (message = "Nicht angemeldet") => new HttpError(401,
 export const forbidden = (message = "Keine Berechtigung", extra?: Record<string, unknown>) =>
   new HttpError(403, message, undefined, extra);
 export const notFound = (message = "Nicht gefunden") => new HttpError(404, message);
-export const conflict = (message: string) => new HttpError(409, message);
+export const conflict = (message: string, extra?: Record<string, unknown>) => new HttpError(409, message, undefined, extra);
 export const tooManyRequests = (message: string, extra?: Record<string, unknown>) =>
   new HttpError(429, message, undefined, extra);

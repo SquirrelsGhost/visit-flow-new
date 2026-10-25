@@ -15,10 +15,14 @@ import { pgRefreshTokenStore } from "./modules/auth/refreshTokens";
 import { pgConsentRepository } from "./modules/consent/ConsentRepository";
 import { ConsentService } from "./modules/consent/ConsentService";
 import { consentRetention } from "./modules/consent/consentRetention";
+import { pgLogbookRepository } from "./modules/logbook/LogbookRepository";
+import { LogbookService } from "./modules/logbook/LogbookService";
+import { logbookPrivacy } from "./modules/logbook/logbookPrivacy";
 import { pgUserExtras } from "./modules/users/UserExtras";
 import { pgUserRepository } from "./modules/users/UserRepository";
 
 export interface Services extends AppServices {
+  logbook: LogbookService;
   access: AccessScope;
   privacy: PrivacyRegistry;
   /** Löschfristen aller Module, ausgeführt vom Aufräum-Job. */
@@ -32,6 +36,9 @@ export function createServices(env: Env, db: Database, pingDatabase?: () => Prom
 
   const privacy = createPrivacyRegistry();
   privacy.register(authPrivacy(tokens));
+  // Fahrtenbuch ohne Löschfrist: Steuerunterlage des Beraters, gelöscht wird es mit dem Konto
+  const logbook = new LogbookService(pgLogbookRepository(db), env.DATA_CIPHER_KEY);
+  privacy.register(logbookPrivacy(logbook));
 
   return {
     consent: new ConsentService(pgConsentRepository(db)),
@@ -43,6 +50,7 @@ export function createServices(env: Env, db: Database, pingDatabase?: () => Prom
       audit,
       jwtSecret: env.JWT_SECRET,
     }),
+    logbook,
     access: new AccessScope(pgScopeSource(db), (kind, id, requester) => {
       void audit.security({ action: "CROSS_TEAM_ACCESS_DENIED", userId: requester.id, email: requester.email, ip: "unbekannt", target: { type: kind, id } });
     }),
