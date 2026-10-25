@@ -6,6 +6,7 @@ import { IdMap } from "./idMap";
 import { MigrationReport } from "./report";
 import type { V1Source } from "./source";
 import { migrateSessions, migrateSettings, migrateSubscriptions } from "./steps/accounts";
+import { migrateCoachMemories, migrateCopilotLogs, type CopilotMigration } from "./steps/copilot";
 import { migrateAreas, migrateTeams } from "./steps/teams";
 import { linkUsers, migrateUsers } from "./steps/users";
 
@@ -14,6 +15,8 @@ export interface MigrateOptions {
   dryRun: boolean;
   /** Übernommene Tabellen vorher leeren. Nur für Proben, nie wenn v2 schon live ist. */
   reset: boolean;
+  /** Schlüssel und Frist für die Enes-Daten (verschlüsselt wie in der v2-API). */
+  copilot: CopilotMigration;
   now?: Date;
 }
 
@@ -42,6 +45,8 @@ export async function migrateV1(db: Database, source: V1Source, options: Migrate
       await migrateSubscriptions(ctx);
       await migrateSettings(ctx);
       await migrateSessions(ctx);
+      await migrateCoachMemories(ctx, options.copilot);
+      await migrateCopilotLogs(ctx, options.copilot);
       report.count("v1_ids", await ctx.ids.persist(tx));
       if (options.dryRun) throw new DryRunRollback();
     });
