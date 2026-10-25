@@ -1,48 +1,53 @@
-import mongoose from "mongoose";
 import type { AppServices } from "./app";
+import type { Database } from "./config/db";
 import type { Env } from "./config/env";
+import type { RetentionRule } from "./lib/db/retention";
 import { createPrivacyRegistry, type PrivacyRegistry } from "./lib/privacy/privacyRegistry";
 import { AccessScope } from "./modules/access/AccessScope";
-import { mongoScopeSource } from "./modules/access/ScopeSource";
-import { mongoAuditLog } from "./modules/audit/auditLog";
+import { pgScopeSource } from "./modules/access/ScopeSource";
+import { pgAuditLog } from "./modules/audit/auditLog";
+import { auditRetention } from "./modules/audit/auditRetention";
 import { AuthService } from "./modules/auth/AuthService";
 import { authPrivacy } from "./modules/auth/authPrivacy";
-import { loginFailureModel, mongoLoginThrottle } from "./modules/auth/loginThrottle";
-import { refreshTokenModel } from "./modules/auth/RefreshToken.model";
-import { mongoRefreshTokenStore } from "./modules/auth/refreshTokens";
-import { consentLogModel } from "./modules/consent/ConsentLog.model";
-import { mongoConsentRepository } from "./modules/consent/ConsentRepository";
+import { authRetention } from "./modules/auth/authRetention";
+import { pgLoginThrottle } from "./modules/auth/loginThrottle";
+import { pgRefreshTokenStore } from "./modules/auth/refreshTokens";
+import { pgConsentRepository } from "./modules/consent/ConsentRepository";
 import { ConsentService } from "./modules/consent/ConsentService";
-import { userModel } from "./modules/users/User.model";
-import { mongoUserExtras } from "./modules/users/UserExtras";
-import { mongoUserRepository } from "./modules/users/UserRepository";
+import { consentRetention } from "./modules/consent/consentRetention";
+import { pgUserExtras } from "./modules/users/UserExtras";
+import { pgUserRepository } from "./modules/users/UserRepository";
 
 export interface Services extends AppServices {
   access: AccessScope;
   privacy: PrivacyRegistry;
+  /** Löschfristen aller Module, ausgeführt vom Aufräum-Job. */
+  retention: RetentionRule[];
 }
 
-/** Erzeugt alle Services mit ihren MongoDB-Anbindungen. Tests bauen Services mit Fakes selbst. */
-export function createServices(env: Env, db = mongoose.connection): Services {
-  const audit = mongoAuditLog(db);
-  const tokens = mongoRefreshTokenStore(refreshTokenModel());
+/** Erzeugt alle Services mit ihren PostgreSQL-Anbindungen. Tests bauen Services mit Fakes selbst. */
+export function createServices(env: Env, db: Database, pingDatabase?: () => Promise<boolean>): Services {
+  const audit = pgAuditLog(db);
+  const tokens = pgRefreshTokenStore(db);
 
   const privacy = createPrivacyRegistry();
   privacy.register(authPrivacy(tokens));
 
   return {
-    consent: new ConsentService(mongoConsentRepository(consentLogModel(env.CONSENT_LOG_DAYS))),
+    consent: new ConsentService(pgConsentRepository(db)),
     auth: new AuthService({
-      users: mongoUserRepository(userModel()),
-      extras: mongoUserExtras(db),
+      users: pgUserRepository(db),
+      extras: pgUserExtras(db),
       tokens,
-      throttle: mongoLoginThrottle(loginFailureModel()),
+      throttle: pgLoginThrottle(db),
       audit,
       jwtSecret: env.JWT_SECRET,
     }),
-    access: new AccessScope(mongoScopeSource(db), (kind, id, requester) => {
+    access: new AccessScope(pgScopeSource(db), (kind, id, requester) => {
       void audit.security({ action: "CROSS_TEAM_ACCESS_DENIED", userId: requester.id, email: requester.email, ip: "unbekannt", target: { type: kind, id } });
     }),
     privacy,
+    retention: [...authRetention, auditRetention, consentRetention(env.CONSENT_LOG_DAYS)],
+    pingDatabase,
   };
 }

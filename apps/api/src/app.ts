@@ -13,6 +13,8 @@ import { healthRoutes } from "./modules/health/health.routes";
 export interface AppServices {
   consent: ConsentService;
   auth: AuthService;
+  /** Für /api/health. Ohne Angabe meldet die API die Datenbank als getrennt. */
+  pingDatabase?: () => Promise<boolean>;
 }
 
 export type AppEnv = Pick<Env, "JWT_SECRET" | "CORS_ORIGINS" | "NODE_ENV">;
@@ -30,7 +32,7 @@ export function createApp(env: AppEnv, services: AppServices): Express {
   app.use(express.json({ limit: "100kb" }));
   app.use(cookieParser());
 
-  app.use("/api/health", healthRoutes(deps));
+  app.use("/api/health", healthRoutes(deps, services.pingDatabase ?? (async () => false)));
   app.use("/api/consent", consentRoutes(deps, services.consent));
   app.use("/api/auth", authRoutes({ ...deps, secureCookies: env.NODE_ENV === "production" }, services.auth));
 

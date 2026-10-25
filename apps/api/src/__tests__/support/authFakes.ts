@@ -1,53 +1,80 @@
 import { randomBytes } from "node:crypto";
 import bcrypt from "bcryptjs";
-import { Types } from "mongoose";
 import type { AuditEntry, AuditLog } from "../../modules/audit/auditLog";
 import { AuthService } from "../../modules/auth/AuthService";
 import { LOGIN_WINDOW_MINUTES, MAX_FAILURES_PER_IP, type LoginThrottle } from "../../modules/auth/loginThrottle";
 import { hashRefreshToken, REFRESH_TOKEN_DAYS, type RefreshTokenStore } from "../../modules/auth/refreshTokens";
 import type { UserExtrasSource } from "../../modules/users/UserExtras";
-import type { UserDoc } from "../../modules/users/User.model";
+import type { UserRecord } from "../../modules/users/User.model";
+import { newId } from "../../lib/db/ids";
 import type { UserRepository } from "../../modules/users/UserRepository";
 
 export const JWT_SECRET = "s".repeat(40);
 export const PASSWORD = "richtig-geheim";
 const PASSWORD_HASH = bcrypt.hashSync(PASSWORD, 4);
 
-export function makeUser(overrides: Partial<UserDoc> = {}): UserDoc {
+export function makeUser(overrides: Partial<UserRecord> = {}): UserRecord {
+  const now = new Date();
   return {
-    _id: new Types.ObjectId(),
+    id: newId(),
     email: "berater@example.de",
-    password: PASSWORD_HASH,
+    passwordHash: PASSWORD_HASH,
     name: "Bea Berater",
+    nickname: null,
+    nicknameChangedAt: null,
+    phone: null,
+    profilePictureUrl: null,
     role: "berater",
+    extraRoles: [],
+    approvalStatus: "approved",
     isActive: true,
-    isWhitelisted: true,
-    whitelistStatus: "approved",
-    lastIpAddress: "203.0.113.9",
-    stripeCustomerId: "cus_123",
+    blockedAt: null,
+    blockedUntil: null,
+    blockReason: null,
+    teamId: null,
+    mentorId: null,
+    strukturleiterId: null,
+    vodafoneContractStart: null,
+    paymentRequired: false,
+    giftedUntil: null,
+    emailVerifiedAt: null,
+    termsAcceptedVersion: null,
+    termsAcceptedAt: null,
+    isCompanyAccount: false,
+    companyName: null,
+    verifiedCompanyEmail: null,
+    whatsappNumber: null,
+    instagramUrl: null,
+    tiktokUrl: null,
+    facebookUrl: null,
+    referralCode: null,
+    referredById: null,
+    lastActivityAt: null,
+    createdAt: now,
+    updatedAt: now,
     ...overrides,
   };
 }
 
-export function memoryUsers(rows: UserDoc[]): UserRepository {
-  const byId = (id: string) => rows.find((u) => String(u._id) === id) ?? null;
+export function memoryUsers(rows: UserRecord[]): UserRepository {
+  const byId = (id: string) => rows.find((u) => u.id === id) ?? null;
   return {
     findByEmailForLogin: async (email) => rows.find((u) => u.email === email) ?? null,
-    // Wie die Mongo-Variante: ohne Passwort-Hash
+    // Wie die Postgres-Variante: ohne Passwort-Hash
     findById: async (id) => {
       const found = byId(id);
       if (!found) return null;
-      const copy: UserDoc = { ...found };
-      delete copy.password;
+      const copy: UserRecord = { ...found };
+      delete copy.passwordHash;
       return copy;
     },
     clearExpiredBlock: async (id) => {
       const user = byId(id);
-      if (user) Object.assign(user, { isBlocked: false, blockUntil: undefined, blockReason: undefined });
+      if (user) Object.assign(user, { blockedAt: null, blockedUntil: null, blockReason: null });
     },
     markLoginSuccess: async (id, now) => {
       const user = byId(id);
-      if (user) Object.assign(user, { loginAttempts: 0, lastActivity: now });
+      if (user) Object.assign(user, { lastActivityAt: now });
     },
   };
 }
@@ -125,7 +152,7 @@ export const fakeExtras: UserExtrasSource = {
   showTeamLeiterLiveTracking: async () => true,
 };
 
-export function makeAuth(users: UserDoc[], now?: () => Date) {
+export function makeAuth(users: UserRecord[], now?: () => Date) {
   const deps = { users: memoryUsers(users), extras: fakeExtras, tokens: memoryTokens(), throttle: memoryThrottle(), audit: memoryAudit() };
   return { ...deps, service: new AuthService({ ...deps, jwtSecret: JWT_SECRET, now }) };
 }

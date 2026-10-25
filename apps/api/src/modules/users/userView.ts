@@ -1,41 +1,4 @@
-import type { UserDoc } from "./User.model";
-
-/**
- * Felder, die der v1-Client am Nutzer liest und die unverändert durchgereicht werden
- * (Port von `shapeUser` aus v1 routes/auth.ts). Nicht mehr enthalten, weil der Client sie
- * nicht braucht und sie personenbezogen oder intern sind: lastIpAddress, userAgent,
- * deviceIds, stripeCustomerId.
- */
-const PASSTHROUGH = [
-  "email", "name", "role", "roles", "profilePicture", "phone", "createdAt", "updatedAt",
-  "whatsappNumber", "tiktokUrl", "instagramUrl", "facebookUrl", "isActive", "isBlocked", "isOnline",
-  "emailVerified", "termsAccepted", "isCompanyAccount", "companyName", "verifiedCompanyEmail",
-  "strukturleiterId", "mentorId", "teamId", "hasStripeCustomer", "hasActiveSubscription", "freeTrialEndsAt",
-  "lockedUntil", "nickname", "nicknameLastChangedAt", "dailySummaryEnabled", "dailySummaryTime",
-  "dailySummaryIncludeStreetList", "dailySummaryIncludeMissingStreetListWarnings",
-  "dailySummaryIncludeNoSalesWarnings", "lastDailySummarySentAt", "vodafoneContractStart",
-  "billingFirstName", "billingLastName", "billingStreet", "billingZip", "billingCity",
-  "dailyStatusReason", "dailyStatusUpdatedAt", "dailyAttendance", "dailyAttendanceUpdatedAt",
-  "dailyAttendanceMinutesLate", "dailyAttendanceReason", "strukturleiterCustomGroups",
-  "strukturleiterHiddenGroups", "strukturleiterGroupName", "vpkn", "dailyPins", "tomorrowPins",
-  "referralCode", "referredBy", "allowedVerticals",
-] as const;
-
-/** Felder mit Standardwert, falls sie im Dokument fehlen (wie in v1). */
-const DEFAULTS: Record<string, unknown> = {
-  permissions: [],
-  isAnonymousInLeaderboard: false,
-  recentEmojis: ["❤️", "👍", "😂", "🔥", "🎉"],
-  billingCountry: "DE",
-  dailyStatus: "active",
-  termsAcceptedVersion: null,
-  termsAcceptedAt: null,
-  battleInactive: false,
-  aiCoachTrialStart: null,
-  giftedUntil: null,
-  referralClicks: 0,
-  partnerStatus: "none",
-};
+import type { UserRecord } from "./User.model";
 
 export interface UserViewExtras {
   subscriptionStatus: string;
@@ -52,28 +15,57 @@ export function vodafoneMonth(start: Date | null | undefined, now: Date): number
   return months > 0 ? months : null;
 }
 
-function paymentRequired(user: UserDoc, now: Date): boolean {
-  if (user.giftedUntil && new Date(user.giftedUntil) > now) return false;
-  return user.paymentRequired ?? false;
+function paymentRequired(user: UserRecord, now: Date): boolean {
+  if (user.giftedUntil && user.giftedUntil > now) return false;
+  return user.paymentRequired;
 }
 
-/** Profil-Antwort im Format, das der v1-Client erwartet. Enthält nie den Passwort-Hash. */
-export function toUserView(user: UserDoc, extras: UserViewExtras, now = new Date()): UserView {
-  const view: Record<string, unknown> = {};
-  for (const key of PASSTHROUGH) view[key] = user[key];
-  for (const [key, fallback] of Object.entries(DEFAULTS)) view[key] = user[key] ?? fallback;
-
+/**
+ * Profil-Antwort. Die Feldnamen bleiben die, die der Client aus v1 kennt (`roles`, `isWhitelisted`,
+ * `isBlocked` …), damit er nicht umgebaut werden muss. Fachliche Felder (Tagesstatus, Pins,
+ * Rechnungsadresse …) ergänzt das jeweilige Modul, sobald es portiert ist. Nie dabei: Passwort-Hash.
+ */
+export function toUserView(user: UserRecord, extras: UserViewExtras, now = new Date()): UserView {
   const month = vodafoneMonth(user.vodafoneContractStart, now);
   return {
-    ...view,
-    id: String(user._id),
+    id: user.id,
     email: user.email,
+    name: user.name,
+    nickname: user.nickname,
+    nicknameLastChangedAt: user.nicknameChangedAt,
+    phone: user.phone,
+    profilePicture: user.profilePictureUrl,
     role: user.role,
+    roles: user.extraRoles,
+    isActive: user.isActive,
+    isWhitelisted: user.approvalStatus === "approved",
+    whitelistStatus: user.approvalStatus,
+    isBlocked: user.blockedAt !== null,
+    blockUntil: user.blockedUntil,
+    teamId: user.teamId,
+    mentorId: user.mentorId,
+    strukturleiterId: user.strukturleiterId,
+    vodafoneContractStart: user.vodafoneContractStart,
     vodafoneCurrentMonth: month,
     isJuniorBerater: month !== null && month <= 4,
     isRegularBerater: month !== null ? month >= 5 : !user.vodafoneContractStart && !user.mentorId && user.role === "berater",
     paymentRequired: paymentRequired(user, now),
+    giftedUntil: user.giftedUntil,
     subscriptionStatus: extras.subscriptionStatus,
     isTrioHeim: extras.isTrioHeim,
+    emailVerified: user.emailVerifiedAt !== null,
+    termsAcceptedVersion: user.termsAcceptedVersion,
+    termsAcceptedAt: user.termsAcceptedAt,
+    isCompanyAccount: user.isCompanyAccount,
+    companyName: user.companyName,
+    verifiedCompanyEmail: user.verifiedCompanyEmail,
+    whatsappNumber: user.whatsappNumber,
+    instagramUrl: user.instagramUrl,
+    tiktokUrl: user.tiktokUrl,
+    facebookUrl: user.facebookUrl,
+    referralCode: user.referralCode,
+    referredBy: user.referredById,
+    createdAt: user.createdAt,
+    updatedAt: user.updatedAt,
   };
 }

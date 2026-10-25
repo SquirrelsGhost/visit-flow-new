@@ -1,31 +1,40 @@
-import { isValidObjectId, type Model } from "mongoose";
-import type { UserDoc } from "./User.model";
+import { eq, getTableColumns } from "drizzle-orm";
+import type { Database } from "../../config/db";
+import { isUuid } from "../../lib/db/ids";
+import { users, type UserRecord } from "./User.model";
 
 export interface UserRepository {
   /** Mit Passwort-Hash, nur für den Login. */
-  findByEmailForLogin(email: string): Promise<UserDoc | null>;
-  findById(id: string): Promise<UserDoc | null>;
+  findByEmailForLogin(email: string): Promise<UserRecord | null>;
+  findById(id: string): Promise<UserRecord | null>;
   /** Hebt eine abgelaufene Admin-Sperre auf (wie v1 beim Login). */
   clearExpiredBlock(id: string): Promise<void>;
-  /** Setzt die alten Fehlversuchs-Zähler von v1 zurück und merkt die letzte Aktivität. */
+  /** Merkt die letzte Aktivität. */
   markLoginSuccess(id: string, now: Date): Promise<void>;
 }
 
-export function mongoUserRepository(users: Model<UserDoc>): UserRepository {
+// Alle Spalten außer dem Passwort-Hash
+const { passwordHash, ...publicColumns } = getTableColumns(users);
+
+export function pgUserRepository(db: Database): UserRepository {
   return {
-    findByEmailForLogin: (email) => users.findOne({ email }).select("+password").lean<UserDoc>().exec(),
-    findById: (id) => (isValidObjectId(id) ? users.findById(id).lean<UserDoc>().exec() : Promise.resolve(null)),
+    async findByEmailForLogin(email) {
+      const [row] = await db.select().from(users).where(eq(users.email, email.toLowerCase())).limit(1);
+      return row ?? null;
+    },
+    async findById(id) {
+      if (!isUuid(id)) return null;
+      const [row] = await db.select(publicColumns).from(users).where(eq(users.id, id)).limit(1);
+      return row ?? null;
+    },
     async clearExpiredBlock(id) {
-      await users.updateOne(
-        { _id: id },
-        { $set: { isBlocked: false, updatedAt: new Date() }, $unset: { blockReason: 1, blockedAt: 1, blockUntil: 1 } },
-      );
+      await db
+        .update(users)
+        .set({ blockedAt: null, blockedUntil: null, blockReason: null, updatedAt: new Date() })
+        .where(eq(users.id, id));
     },
     async markLoginSuccess(id, now) {
-      await users.updateOne(
-        { _id: id },
-        { $set: { loginAttempts: 0, lastActivity: now, updatedAt: now }, $unset: { lockedUntil: 1 } },
-      );
+      await db.update(users).set({ lastActivityAt: now, updatedAt: now }).where(eq(users.id, id));
     },
   };
 }

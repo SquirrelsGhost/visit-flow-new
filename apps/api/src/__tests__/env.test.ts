@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { loadEnv } from "../config/env";
 
 const valid = {
-  MONGO_URI: "mongodb://localhost:27017/test",
+  DATABASE_URL: "postgres://localhost:5432/test",
   JWT_SECRET: "j".repeat(40),
   DATA_CIPHER_KEY: "d".repeat(40),
   BLIND_INDEX_KEY: "b".repeat(40),

@@ -3,13 +3,13 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { createApp } from "../app";
 import { verifyAccessToken } from "../lib/auth/accessToken";
 import { ConsentService } from "../modules/consent/ConsentService";
-import type { UserDoc } from "../modules/users/User.model";
+import type { UserRecord } from "../modules/users/User.model";
 import { JWT_SECRET, makeAuth, makeUser, PASSWORD } from "./support/authFakes";
 
 const env = { JWT_SECRET, CORS_ORIGINS: [], NODE_ENV: "test" as const };
 const noConsent = new ConsentService({ insert: async (entry) => entry, findByConsentId: async () => [] });
 
-function setup(users: UserDoc[]) {
+function setup(users: UserRecord[]) {
   const auth = makeAuth(users);
   return { ...auth, app: createApp(env, { consent: noConsent, auth: auth.service }) };
 }
@@ -26,8 +26,8 @@ describe("POST /api/auth/login", () => {
     const res = await request(ctx.app).post("/api/auth/login").send({ email: " Berater@Example.de ", password: PASSWORD });
 
     expect(res.status).toBe(200);
-    expect(res.body.data).toMatchObject({ user: { id: String(user._id), email: user.email, role: "berater" }, showTeamLeiterLiveTracking: true });
-    expect(verifyAccessToken(res.body.data.token, JWT_SECRET)).toEqual({ id: String(user._id), email: user.email, role: "berater" });
+    expect(res.body.data).toMatchObject({ user: { id: user.id, email: user.email, role: "berater" }, showTeamLeiterLiveTracking: true });
+    expect(verifyAccessToken(res.body.data.token, JWT_SECRET)).toEqual({ id: user.id, email: user.email, role: "berater" });
     expect(res.body.data.refreshToken).toBeUndefined();
     const cookie = refreshCookie(res.headers);
     expect(cookie).toMatch(/Path=\/api\/auth/);
@@ -61,14 +61,14 @@ describe("POST /api/auth/login", () => {
   });
 
   it("meldet nicht freigegebene Konten mit whitelistStatus wie v1", async () => {
-    const pending = makeUser({ email: "neu@example.de", isWhitelisted: false, whitelistStatus: "pending" });
+    const pending = makeUser({ email: "neu@example.de", approvalStatus: "pending" });
     const res = await request(setup([pending]).app).post("/api/auth/login").send({ email: pending.email, password: PASSWORD });
     expect(res.status).toBe(403);
     expect(res.body).toMatchObject({ success: false, whitelistStatus: "pending" });
   });
 
   it("verrät die Sperre erst nach richtigem Passwort", async () => {
-    const blocked = makeUser({ email: "gesperrt@example.de", isBlocked: true, blockReason: "Test" });
+    const blocked = makeUser({ email: "gesperrt@example.de", blockedAt: new Date(), blockReason: "Test" });
     const { app } = setup([blocked]);
     const wrong = await request(app).post("/api/auth/login").send({ email: blocked.email, password: "falsch" });
     expect(wrong.status).toBe(401);
@@ -87,7 +87,7 @@ describe("Refresh, Logout und Profil", () => {
 
     const refreshed = await request(app).post("/api/auth/refresh").set("Cookie", first);
     expect(refreshed.status).toBe(200);
-    expect(verifyAccessToken(refreshed.body.data.token, JWT_SECRET)?.id).toBe(String(user._id));
+    expect(verifyAccessToken(refreshed.body.data.token, JWT_SECRET)?.id).toBe(user.id);
     expect(new Set(tokens.rows.map((t) => t.familyId)).size).toBe(1);
 
     const replay = await request(app).post("/api/auth/refresh").set("Cookie", first);
@@ -115,7 +115,7 @@ describe("Refresh, Logout und Profil", () => {
     for (const path of ["/api/auth/me", "/api/auth/profile"]) {
       expect((await request(app).get(path)).status).toBe(401);
       const res = await request(app).get(path).set("Authorization", `Bearer ${login.body.data.token}`);
-      expect(res.body.data.user).toMatchObject({ id: String(user._id), email: user.email });
+      expect(res.body.data.user).toMatchObject({ id: user.id, email: user.email });
     }
   });
 });

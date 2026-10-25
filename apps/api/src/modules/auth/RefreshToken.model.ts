@@ -1,31 +1,25 @@
-import { Schema, model, type Model, type Types } from "mongoose";
+import { bigint, boolean, index, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
+import { users } from "../users/User.model";
 
 /**
- * v1-Collection `refresh_tokens`, gleiches Format wie v1 (server/src/models/RefreshToken.ts):
- * SHA-256 des Roh-Tokens, 7 Tage gültig, Rotationskette über `familyId`. Dadurch gilt ein
- * Refresh-Cookie aus v1 auch in v2 und umgekehrt. Den TTL-Index auf `expiresAt` legt v1 an.
+ * Refresh-Tokens im Format von v1 (server/src/models/RefreshToken.ts): SHA-256 des Roh-Tokens,
+ * 7 Tage gültig, Rotationskette über `familyId`. Weil der Hash gleich gebildet wird, gilt ein
+ * `vf_refresh`-Cookie aus v1 nach dem Umzug weiter. Abgelaufene Zeilen löscht der Aufräum-Job.
  */
-export interface RefreshTokenDoc {
-  tokenHash: string;
-  userId: Types.ObjectId;
-  createdAt: Date;
-  expiresAt: Date;
-  familyId: string;
-  isRevoked: boolean;
-}
-
-const refreshTokenSchema = new Schema<RefreshTokenDoc>(
+export const refreshTokens = pgTable(
+  "refresh_tokens",
   {
-    tokenHash: { type: String, required: true },
-    userId: { type: Schema.Types.ObjectId, required: true },
-    createdAt: { type: Date, required: true },
-    expiresAt: { type: Date, required: true },
-    familyId: { type: String, required: true },
-    isRevoked: { type: Boolean, default: false },
+    id: bigint({ mode: "number" }).primaryKey().generatedAlwaysAsIdentity(),
+    tokenHash: text().notNull().unique(),
+    userId: uuid().notNull().references(() => users.id, { onDelete: "cascade" }),
+    familyId: text().notNull(),
+    createdAt: timestamp({ withTimezone: true }).notNull(),
+    expiresAt: timestamp({ withTimezone: true }).notNull(),
+    isRevoked: boolean().notNull().default(false),
   },
-  { collection: "refresh_tokens", autoIndex: false, versionKey: false },
+  (table) => [
+    index("refresh_tokens_user_id_idx").on(table.userId),
+    index("refresh_tokens_family_id_idx").on(table.familyId),
+    index("refresh_tokens_expires_at_idx").on(table.expiresAt),
+  ],
 );
-
-export function refreshTokenModel(): Model<RefreshTokenDoc> {
-  return model<RefreshTokenDoc>("RefreshToken", refreshTokenSchema);
-}

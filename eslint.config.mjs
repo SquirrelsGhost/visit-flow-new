@@ -26,7 +26,7 @@ export default tseslint.config(
       "max-lines": ["error", { max: MAX_LINES, skipBlankLines: true, skipComments: true }],
       "@typescript-eslint/no-explicit-any": "error",
       "@typescript-eslint/consistent-type-imports": "error",
-      "@typescript-eslint/no-unused-vars": ["error", { argsIgnorePattern: "^_" }],
+      "@typescript-eslint/no-unused-vars": ["error", { argsIgnorePattern: "^_", ignoreRestSiblings: true }],
       "no-console": ["error", { allow: ["warn", "error", "info"] }],
     },
     linterOptions: { reportUnusedDisableDirectives: "error", noInlineConfig: true },

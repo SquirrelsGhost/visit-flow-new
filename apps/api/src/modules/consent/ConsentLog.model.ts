@@ -1,40 +1,26 @@
-import { Schema, model, type Model } from "mongoose";
-import { CONSENT_CATEGORIES, CONSENT_SOURCES, type ConsentChoice, type ConsentSource } from "@visit-flow/shared/consent";
+import { bigint, index, integer, jsonb, pgEnum, pgTable, text, timestamp } from "drizzle-orm/pg-core";
+import { CONSENT_SOURCES, type ConsentChoice } from "@visit-flow/shared/consent";
+
+export const consentSource = pgEnum("consent_source", CONSENT_SOURCES);
 
 /**
  * Einwilligungs-Protokoll (Nachweis nach Art. 7 Abs. 1 DSGVO). Bewusst ohne IP, User-Agent und userId.
- * Eigene Collection `consentlogs`: Die v1-Collection `userconsents` (pro Nutzer, mit GPS-Widerspruch)
- * bleibt unverändert, solange v1 läuft.
+ * Einträge älter als CONSENT_LOG_DAYS löscht der Aufräum-Job.
  */
-export interface ConsentLogDoc {
-  consentId: string;
-  version: number;
-  choice: ConsentChoice;
-  source: ConsentSource;
-  receivedAt: Date;
-}
-
-const DAY_SECONDS = 24 * 60 * 60;
-
-const choiceDefinition = Object.fromEntries(CONSENT_CATEGORIES.map((category) => [category, { type: Boolean, required: true }]));
-
-const consentLogSchema = new Schema<ConsentLogDoc>(
+export const consentLogs = pgTable(
+  "consent_logs",
   {
-    consentId: { type: String, required: true, index: true },
-    version: { type: Number, required: true },
-    choice: choiceDefinition,
-    source: { type: String, enum: CONSENT_SOURCES, required: true },
-    receivedAt: { type: Date, required: true, default: () => new Date() },
+    id: bigint({ mode: "number" }).primaryKey().generatedAlwaysAsIdentity(),
+    consentId: text().notNull(),
+    version: integer().notNull(),
+    choice: jsonb().$type<ConsentChoice>().notNull(),
+    source: consentSource().notNull(),
+    receivedAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
   },
-  { collection: "consentlogs", versionKey: false },
+  (table) => [
+    index("consent_logs_consent_id_received_at_idx").on(table.consentId, table.receivedAt.desc()),
+    index("consent_logs_received_at_idx").on(table.receivedAt),
+  ],
 );
 
-/**
- * Erzeugt das Model mit TTL-Index: MongoDB löscht Einträge nach `retentionDays` selbst,
- * auch wenn der Endpunkt lange nicht aufgerufen wird. Eine spätere Änderung der Frist
- * braucht ein `collMod` auf den bestehenden Index.
- */
-export function consentLogModel(retentionDays: number): Model<ConsentLogDoc> {
-  consentLogSchema.index({ receivedAt: 1 }, { expireAfterSeconds: retentionDays * DAY_SECONDS });
-  return model<ConsentLogDoc>("ConsentLog", consentLogSchema);
-}
+export type ConsentLogDoc = Omit<typeof consentLogs.$inferSelect, "id">;

@@ -6,9 +6,11 @@ import { signAccessToken } from "../lib/auth/accessToken";
 import { defineRoute } from "../lib/http/defineRoute";
 import { conflict } from "../lib/http/HttpError";
 import { errorHandler } from "../lib/http/errorHandler";
+import { newId } from "../lib/db/ids";
 
 const deps = { jwtSecret: "s".repeat(40) };
-const token = (role: "berater" | "teamleiter" | "admin") => `Bearer ${signAccessToken({ id: "u1", email: "u1@example.com", role }, deps.jwtSecret)}`;
+const USER_ID = newId();
+const token = (role: "berater" | "teamleiter" | "admin") => `Bearer ${signAccessToken({ id: USER_ID, email: "u1@example.com", role }, deps.jwtSecret)}`;
 
 function testApp() {
   const router = Router();

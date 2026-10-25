@@ -5,10 +5,10 @@ import { verifyPassword } from "../../lib/auth/password";
 import { notFound, tooManyRequests, unauthorized } from "../../lib/http/HttpError";
 import type { AuditLog } from "../audit/auditLog";
 import type { UserExtrasSource } from "../users/UserExtras";
-import type { UserDoc } from "../users/User.model";
+import type { UserRecord } from "../users/User.model";
 import type { UserRepository } from "../users/UserRepository";
 import { toUserView, type UserView } from "../users/userView";
-import { assertMayLogin, blockExpired } from "./loginChecks";
+import { assertMayLogin, blockExpired, isBlocked } from "./loginChecks";
 import type { LoginThrottle } from "./loginThrottle";
 import type { RefreshTokenStore } from "./refreshTokens";
 
@@ -56,18 +56,18 @@ export class AuthService {
     }
 
     const user = await users.findByEmailForLogin(input.email);
-    if (!(await verifyPassword(input.password, user?.password)) || !user) {
+    if (!(await verifyPassword(input.password, user?.passwordHash ?? undefined)) || !user) {
       await throttle.recordFailure(client.ip, input.email, now);
-      await audit.security({ action: "LOGIN_FAILED", ...actor, userId: user ? String(user._id) : undefined });
+      await audit.security({ action: "LOGIN_FAILED", ...actor, userId: user?.id });
       throw unauthorized(GENERIC_LOGIN_ERROR);
     }
 
-    const userId = String(user._id);
+    const userId = user.id;
     if (blockExpired(user, now)) await users.clearExpiredBlock(userId);
     try {
       assertMayLogin(user, now);
     } catch (error) {
-      await audit.security({ action: "LOGIN_BLOCKED", ...actor, userId, metadata: { whitelistStatus: user.whitelistStatus } });
+      await audit.security({ action: "LOGIN_BLOCKED", ...actor, userId, metadata: { approvalStatus: user.approvalStatus } });
       throw error;
     }
 
@@ -94,7 +94,7 @@ export class AuthService {
     }
     const user = await this.deps.users.findById(result.userId);
     // Gesperrte und deaktivierte Konten bekommen keine neuen Tokens (wie v1)
-    if (!user || user.isActive === false || (user.isBlocked && !blockExpired(user, now))) {
+    if (!user || !user.isActive || isBlocked(user, now)) {
       throw unauthorized("Sitzung abgelaufen, bitte erneut anmelden");
     }
     const refreshToken = await this.deps.tokens.issue(result.userId, now, result.familyId);
@@ -111,12 +111,12 @@ export class AuthService {
     return { user: await this.view(user) };
   }
 
-  private async view(user: UserDoc): Promise<UserView> {
+  private async view(user: UserRecord): Promise<UserView> {
     return toUserView(user, await this.deps.extras.forUser(user), this.now());
   }
 
-  private accessToken(user: UserDoc): string {
+  private accessToken(user: UserRecord): string {
     if (!isRole(user.role)) throw unauthorized("Unbekannte Rolle");
-    return signAccessToken({ id: String(user._id), email: user.email, role: user.role }, this.deps.jwtSecret);
+    return signAccessToken({ id: user.id, email: user.email, role: user.role }, this.deps.jwtSecret);
   }
 }
