@@ -1,4 +1,4 @@
-import { newObjectId } from "../../lib/db/objectId";
+import { newId } from "../../lib/db/ids";
 import type { CoachMemoryView } from "@visit-flow/shared/copilotSchema";
 import type { CoachMemoryRepository } from "../../modules/copilot/CoachMemoryRepository";
 import type { CopilotExchange, CopilotLogRepository } from "../../modules/copilot/CopilotLogRepository";
@@ -24,7 +24,7 @@ export function memoryCoachMemories(): CoachMemoryRepository & { rows: (CoachMem
   return {
     rows,
     async add(userId, kind, content, source) {
-      const row = { id: newObjectId(), userId, kind, content, source, createdAt: new Date().toISOString() };
+      const row = { id: newId(), userId, kind, content, source, createdAt: new Date().toISOString() };
       rows.unshift(row);
       return { id: row.id, kind, content, source, createdAt: row.createdAt };
     },
@@ -54,7 +54,7 @@ export function memoryCopilotLogs(): CopilotLogRepository & { rows: LogRow[] } {
   return {
     rows,
     async insert(userId, vertical, exchange) {
-      const id = newObjectId();
+      const id = newId();
       rows.push({ id, userId, vertical, feedback: null, ...exchange });
       return id;
     },

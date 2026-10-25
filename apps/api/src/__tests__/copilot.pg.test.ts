@@ -1,6 +1,6 @@
 import { eq } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { newObjectId } from "../lib/db/objectId";
+import { isUuid, newId } from "../lib/db/ids";
 import { purgeExpired } from "../lib/db/retention";
 import { coachMemories } from "../modules/copilot/CoachMemory.model";
 import { pgCoachMemoryRepository } from "../modules/copilot/CoachMemoryRepository";
@@ -16,8 +16,8 @@ const DAY = 24 * 60 * 60 * 1000;
 
 describe.skipIf(!TEST_DATABASE_URL)("Enes-Daten in PostgreSQL", () => {
   let database: TestDatabase;
-  const userId = newObjectId();
-  const otherId = newObjectId();
+  const userId = newId();
+  const otherId = newId();
 
   beforeAll(async () => {
     database = await createTestDatabase();
@@ -33,7 +33,7 @@ describe.skipIf(!TEST_DATABASE_URL)("Enes-Daten in PostgreSQL", () => {
     const memories = pgCoachMemoryRepository(database.db, KEY, 180);
     const saved = await memories.add(userId, "preference", "Läuft lieber abends", "user");
     expect(saved).toMatchObject({ kind: "preference", content: "Läuft lieber abends", source: "user" });
-    expect(saved.id).toMatch(/^[0-9a-f]{24}$/);
+    expect(isUuid(saved.id)).toBe(true);
     const raw = await database.db.select().from(coachMemories);
     expect(JSON.stringify(raw)).not.toContain("abends");
     expect(await memories.list(userId, 10)).toEqual([saved]);
@@ -55,21 +55,21 @@ describe.skipIf(!TEST_DATABASE_URL)("Enes-Daten in PostgreSQL", () => {
   });
 
   it("lehnt unbekannte Arten und Bewertungen in der Datenbank ab", async () => {
-    const base = { id: newObjectId(), userId, content: { sealed: 1 as const, iv: "", tag: "", data: "" }, expiresAt: new Date() };
+    const base = { id: newId(), userId, content: { sealed: 1 as const, iv: "", tag: "", data: "" }, expiresAt: new Date() };
     await expect(database.db.insert(coachMemories).values({ ...base, kind: "hack" as "fact", source: "user" })).rejects.toThrow();
-    await expect(database.db.insert(copilotLogs).values({ id: newObjectId(), userId, vertical: "telco", question: base.content, reply: base.content, feedback: "meh" as "up" })).rejects.toThrow();
+    await expect(database.db.insert(copilotLogs).values({ id: newId(), userId, vertical: "telco", question: base.content, reply: base.content, feedback: "meh" as "up" })).rejects.toThrow();
   });
 
   it("löscht Abgelaufenes über den Aufräum-Job und alles mit dem Konto", async () => {
     const now = new Date();
     const sealed = { sealed: 1 as const, iv: "", tag: "", data: "" };
     await database.db.insert(coachMemories).values([
-      { id: newObjectId(), userId, kind: "fact", source: "enes", content: sealed, expiresAt: new Date(now.getTime() - DAY) },
-      { id: newObjectId(), userId, kind: "fact", source: "enes", content: sealed, expiresAt: new Date(now.getTime() + DAY) },
+      { id: newId(), userId, kind: "fact", source: "enes", content: sealed, expiresAt: new Date(now.getTime() - DAY) },
+      { id: newId(), userId, kind: "fact", source: "enes", content: sealed, expiresAt: new Date(now.getTime() + DAY) },
     ]);
     await database.db.insert(copilotLogs).values([
-      { id: newObjectId(), userId, vertical: "telco", question: sealed, reply: sealed, createdAt: new Date(now.getTime() - 91 * DAY) },
-      { id: newObjectId(), userId, vertical: "telco", question: sealed, reply: sealed, createdAt: new Date(now.getTime() - DAY) },
+      { id: newId(), userId, vertical: "telco", question: sealed, reply: sealed, createdAt: new Date(now.getTime() - 91 * DAY) },
+      { id: newId(), userId, vertical: "telco", question: sealed, reply: sealed, createdAt: new Date(now.getTime() - DAY) },
     ]);
     expect(await purgeExpired(database.db, copilotRetention(90), now)).toEqual({ coach_memories: 1, copilot_logs: 1 });
     await database.db.delete(users).where(eq(users.id, userId));

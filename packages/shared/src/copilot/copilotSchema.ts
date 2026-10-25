@@ -70,13 +70,13 @@ export type CopilotChatInput = z.infer<typeof copilotChatInputSchema>;
 /** 👍/👎 zu einer Antwort (v1 POST /copilot/feedback). */
 export const copilotFeedbackSchema = z
   .object({
-    logId: z.string().regex(/^[a-f\d]{24}$/i),
+    logId: z.uuid(),
     feedback: z.enum(["up", "down"]),
     reason: z.string().max(500).optional(),
   })
   .strict();
 
-export const copilotMemoryParamsSchema = z.object({ id: z.string().regex(/^[a-f\d]{24}$/i) }).strict();
+export const copilotMemoryParamsSchema = z.object({ id: z.uuid() }).strict();
 
 export const COACH_MEMORY_KINDS = ["preference", "fact", "win", "weakspot"] as const;
 export type CoachMemoryKind = (typeof COACH_MEMORY_KINDS)[number];

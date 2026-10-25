@@ -11,7 +11,7 @@ import { fakeLlm, memoryCoachMemories, memoryCopilotLogs } from "./support/copil
 
 const env = { JWT_SECRET, CORS_ORIGINS: [], NODE_ENV: "test" as const };
 const consent = new ConsentService({ insert: async (e) => e, findByConsentId: async () => [] });
-const bea = { id: "64b000000000000000000001", email: "bea@example.de", role: "berater" as const };
+const bea = { id: "01900000-0000-7000-8000-000000000001", email: "bea@example.de", role: "berater" as const };
 const token = `Bearer ${signAccessToken(bea, JWT_SECRET)}`;
 
 function setup(llm: LlmClient | null) {
@@ -90,7 +90,7 @@ describe("Antwort, Feedback und Gedächtnis", () => {
     expect(fb.body).toEqual({ success: true, data: { saved: true } });
     await request(app).post("/api/copilot/chat").set("Authorization", token).send({ message: "Und jetzt?" });
     expect(llm.calls[1]?.[0]?.content).toContain("Rechne die 24 Monate vor.");
-    const unknown = await request(app).post("/api/copilot/feedback").set("Authorization", token).send({ logId: "64b000000000000000000099", feedback: "down" });
+    const unknown = await request(app).post("/api/copilot/feedback").set("Authorization", token).send({ logId: "01900000-0000-7000-8000-000000000099", feedback: "down" });
     expect(unknown.status).toBe(404);
   });
 

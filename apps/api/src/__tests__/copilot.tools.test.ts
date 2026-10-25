@@ -14,7 +14,7 @@ import { fakeLlm, memoryCoachMemories, memoryCopilotLogs } from "./support/copil
 
 const env = { JWT_SECRET, CORS_ORIGINS: [], NODE_ENV: "test" as const };
 const consent = new ConsentService({ insert: async (e) => e, findByConsentId: async () => [] });
-const token = `Bearer ${signAccessToken({ id: "64b000000000000000000001", email: "bea@example.de", role: "berater" }, JWT_SECRET)}`;
+const token = `Bearer ${signAccessToken({ id: "01900000-0000-7000-8000-000000000001", email: "bea@example.de", role: "berater" }, JWT_SECRET)}`;
 const call = (id: string, name: string, args = "{}"): LlmToolCall => ({ id, name, arguments: args });
 
 function setup(chunks: (string | LlmToolCall)[]) {

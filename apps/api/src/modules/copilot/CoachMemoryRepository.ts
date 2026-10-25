@@ -2,7 +2,7 @@ import { and, desc, eq, gt } from "drizzle-orm";
 import type { CoachMemoryKind, CoachMemoryView } from "@visit-flow/shared/copilotSchema";
 import type { Database } from "../../config/db";
 import { readField, seal } from "../../lib/crypto/dataCipher";
-import { newObjectId } from "../../lib/db/objectId";
+import { isUuid } from "../../lib/db/ids";
 import { DAY_MS } from "../../lib/db/retention";
 import { coachMemories } from "./CoachMemory.model";
 
@@ -31,7 +31,7 @@ export function pgCoachMemoryRepository(db: Database, cipherKey: string, retenti
       const now = new Date();
       const [created] = await db
         .insert(coachMemories)
-        .values({ id: newObjectId(now), userId, kind, source, content: seal(content, cipherKey), createdAt: now, expiresAt: new Date(now.getTime() + retentionDays * DAY_MS) })
+        .values({ userId, kind, source, content: seal(content, cipherKey), createdAt: now, expiresAt: new Date(now.getTime() + retentionDays * DAY_MS) })
         .returning();
       if (!created) throw new Error("Erinnerung wurde nicht gespeichert");
       return view(created);
@@ -46,6 +46,8 @@ export function pgCoachMemoryRepository(db: Database, cipherKey: string, retenti
       return rows.map(view);
     },
     async remove(userId, id) {
+      // Fremde IDs aus der Anfrage: PostgreSQL würde bei ungültiger UUID einen Fehler werfen
+      if (!isUuid(id)) return false;
       return ((await db.delete(coachMemories).where(owned(userId, id))).rowCount ?? 0) === 1;
     },
     async removeAll(userId) {

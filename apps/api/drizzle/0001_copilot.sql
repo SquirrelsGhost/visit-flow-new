@@ -1,25 +1,25 @@
+CREATE TYPE "public"."coach_memory_kind" AS ENUM('preference', 'fact', 'win', 'weakspot');--> statement-breakpoint
+CREATE TYPE "public"."coach_memory_source" AS ENUM('user', 'enes');--> statement-breakpoint
+CREATE TYPE "public"."copilot_feedback" AS ENUM('up', 'down');--> statement-breakpoint
 CREATE TABLE "coach_memories" (
-	"id" text PRIMARY KEY NOT NULL,
-	"user_id" text NOT NULL,
-	"kind" text NOT NULL,
+	"id" uuid PRIMARY KEY NOT NULL,
+	"user_id" uuid NOT NULL,
+	"kind" "coach_memory_kind" NOT NULL,
 	"content" jsonb NOT NULL,
-	"source" text NOT NULL,
+	"source" "coach_memory_source" NOT NULL,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
-	"expires_at" timestamp with time zone NOT NULL,
-	CONSTRAINT "coach_memories_kind_valid" CHECK ("coach_memories"."kind" in ('preference', 'fact', 'win', 'weakspot')),
-	CONSTRAINT "coach_memories_source_valid" CHECK ("coach_memories"."source" in ('user', 'enes'))
+	"expires_at" timestamp with time zone NOT NULL
 );
 --> statement-breakpoint
 CREATE TABLE "copilot_logs" (
-	"id" text PRIMARY KEY NOT NULL,
-	"user_id" text NOT NULL,
+	"id" uuid PRIMARY KEY NOT NULL,
+	"user_id" uuid NOT NULL,
 	"vertical" text NOT NULL,
 	"question" jsonb NOT NULL,
 	"reply" jsonb NOT NULL,
-	"feedback" text,
+	"feedback" "copilot_feedback",
 	"reason" text,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
-	CONSTRAINT "copilot_logs_feedback_valid" CHECK ("copilot_logs"."feedback" is null or "copilot_logs"."feedback" in ('up', 'down')),
 	CONSTRAINT "copilot_logs_reason_length" CHECK (char_length("copilot_logs"."reason") <= 500)
 );
 --> statement-breakpoint

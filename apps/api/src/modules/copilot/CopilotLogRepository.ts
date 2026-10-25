@@ -1,7 +1,7 @@
 import { and, desc, eq } from "drizzle-orm";
 import type { Database } from "../../config/db";
 import { readField, seal, type SealedValue } from "../../lib/crypto/dataCipher";
-import { newObjectId } from "../../lib/db/objectId";
+import { isUuid } from "../../lib/db/ids";
 import { copilotLogs } from "./CopilotLog.model";
 
 export interface CopilotExchange {
@@ -28,11 +28,15 @@ export function pgCopilotLogRepository(db: Database, cipherKey: string): Copilot
   const newest = [desc(copilotLogs.createdAt), desc(copilotLogs.id)];
   return {
     async insert(userId, vertical, exchange) {
-      const id = newObjectId();
-      await db.insert(copilotLogs).values({ id, userId, vertical, question: seal(exchange.question, cipherKey), reply: seal(exchange.reply, cipherKey) });
-      return id;
+      const [created] = await db
+        .insert(copilotLogs)
+        .values({ userId, vertical, question: seal(exchange.question, cipherKey), reply: seal(exchange.reply, cipherKey) })
+        .returning({ id: copilotLogs.id });
+      if (!created) throw new Error("Gespräch wurde nicht protokolliert");
+      return created.id;
     },
     async setFeedback(userId, logId, feedback, reason) {
+      if (!isUuid(logId)) return false;
       const result = await db
         .update(copilotLogs)
         .set({ feedback, ...(reason ? { reason } : {}) })
