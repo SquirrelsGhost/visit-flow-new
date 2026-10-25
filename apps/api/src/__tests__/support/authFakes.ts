@@ -6,7 +6,7 @@ import { LOGIN_WINDOW_MINUTES, MAX_FAILURES_PER_IP, type LoginThrottle } from ".
 import { hashRefreshToken, REFRESH_TOKEN_DAYS, type RefreshTokenStore } from "../../modules/auth/refreshTokens";
 import type { UserExtrasSource } from "../../modules/users/UserExtras";
 import type { UserRecord } from "../../modules/users/User.model";
-import { newObjectId } from "../../lib/db/objectId";
+import { newId } from "../../lib/db/ids";
 import type { UserRepository } from "../../modules/users/UserRepository";
 
 export const JWT_SECRET = "s".repeat(40);
@@ -16,31 +16,40 @@ const PASSWORD_HASH = bcrypt.hashSync(PASSWORD, 4);
 export function makeUser(overrides: Partial<UserRecord> = {}): UserRecord {
   const now = new Date();
   return {
-    id: newObjectId(),
-    legacyId: null,
+    id: newId(),
     email: "berater@example.de",
     passwordHash: PASSWORD_HASH,
     name: "Bea Berater",
+    nickname: null,
+    nicknameChangedAt: null,
+    phone: null,
+    profilePictureUrl: null,
     role: "berater",
-    roles: [],
+    extraRoles: [],
+    approvalStatus: "approved",
     isActive: true,
-    isBlocked: false,
     blockedAt: null,
-    blockUntil: null,
+    blockedUntil: null,
     blockReason: null,
-    isWhitelisted: true,
-    whitelistStatus: "approved",
     teamId: null,
-    strukturleiterId: null,
     mentorId: null,
+    strukturleiterId: null,
+    vodafoneContractStart: null,
     paymentRequired: false,
     giftedUntil: null,
-    vodafoneContractStart: null,
-    loginAttempts: 0,
-    lockedUntil: null,
-    lastActivity: null,
-    // Wie nach der Übernahme aus v1: Felder, die die Profil-Antwort nicht zeigen darf
-    profile: { lastIpAddress: "203.0.113.9", stripeCustomerId: "cus_123" },
+    emailVerifiedAt: null,
+    termsAcceptedVersion: null,
+    termsAcceptedAt: null,
+    isCompanyAccount: false,
+    companyName: null,
+    verifiedCompanyEmail: null,
+    whatsappNumber: null,
+    instagramUrl: null,
+    tiktokUrl: null,
+    facebookUrl: null,
+    referralCode: null,
+    referredById: null,
+    lastActivityAt: null,
     createdAt: now,
     updatedAt: now,
     ...overrides,
@@ -61,11 +70,11 @@ export function memoryUsers(rows: UserRecord[]): UserRepository {
     },
     clearExpiredBlock: async (id) => {
       const user = byId(id);
-      if (user) Object.assign(user, { isBlocked: false, blockUntil: null, blockReason: null });
+      if (user) Object.assign(user, { blockedAt: null, blockedUntil: null, blockReason: null });
     },
     markLoginSuccess: async (id, now) => {
       const user = byId(id);
-      if (user) Object.assign(user, { loginAttempts: 0, lastActivity: now });
+      if (user) Object.assign(user, { lastActivityAt: now });
     },
   };
 }

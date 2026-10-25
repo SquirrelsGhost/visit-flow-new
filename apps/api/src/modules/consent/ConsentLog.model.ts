@@ -1,7 +1,7 @@
-import { sql } from "drizzle-orm";
-import { bigint, check, index, integer, jsonb, pgTable, text, timestamp } from "drizzle-orm/pg-core";
-import { sqlList } from "../../lib/db/sqlList";
+import { bigint, index, integer, jsonb, pgEnum, pgTable, text, timestamp } from "drizzle-orm/pg-core";
 import { CONSENT_SOURCES, type ConsentChoice } from "@visit-flow/shared/consent";
+
+export const consentSource = pgEnum("consent_source", CONSENT_SOURCES);
 
 /**
  * Einwilligungs-Protokoll (Nachweis nach Art. 7 Abs. 1 DSGVO). Bewusst ohne IP, User-Agent und userId.
@@ -14,13 +14,12 @@ export const consentLogs = pgTable(
     consentId: text().notNull(),
     version: integer().notNull(),
     choice: jsonb().$type<ConsentChoice>().notNull(),
-    source: text({ enum: CONSENT_SOURCES }).notNull(),
+    source: consentSource().notNull(),
     receivedAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [
     index("consent_logs_consent_id_received_at_idx").on(table.consentId, table.receivedAt.desc()),
     index("consent_logs_received_at_idx").on(table.receivedAt),
-    check("consent_logs_source_valid", sql`${table.source} in (${sqlList(CONSENT_SOURCES)})`),
   ],
 );
 

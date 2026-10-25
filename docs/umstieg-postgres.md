@@ -6,17 +6,27 @@ Umstiegstag einmal ausgelesen.
 
 ## Was sich ändert
 
-| Vorher (MongoDB) | Jetzt (PostgreSQL) |
+Das Schema ist ohne Rücksicht auf v1 neu entworfen (Entscheidung Emre, 25.10.2026: „Schema sauber
+neu, Konten mit“). Die Daten kommen trotzdem einmal über das Übernahmeskript.
+
+| v1 (MongoDB) | v2 (PostgreSQL) |
 | --- | --- |
-| Mongoose-Models auf v1-Collections | Drizzle-Tabellen in `<Name>.model.ts`, SQL-Migrationen in `apps/api/drizzle/` |
-| `_id` als ObjectId | `id text` mit derselben ObjectId als Hex; neue IDs über `newObjectId()` im selben Format |
-| TTL-Indizes | `RetentionRule` je Modul, stündlicher Job mit Advisory-Lock (`lib/db/retention.ts`) |
-| `teams.member_ids` / `mentor_ids`, `areas.team_ids` + `teams.area_id` | Tabellen `team_members` und `area_teams` (eine Quelle statt zwei) |
-| Freie Felder im Nutzerdokument | Feste Spalten für alles, was v2 nutzt; übrige v1-Profilfelder vorübergehend in `users.profile` (jsonb) |
+| `_id` als ObjectId | `uuid` (UUIDv7 über `newId()`); die Zuordnung alt → neu steht in `v1_ids` |
+| `isWhitelisted` + `whitelistStatus` | ein Enum `approval_status` (pending, approved, rejected) |
+| `isBlocked` + `blockedAt` + `blockUntil` | `blocked_at` (gesetzt = gesperrt) + `blocked_until` |
+| `loginAttempts`, `lockedUntil` am Nutzer | entfallen, die Drosselung steht in `login_failures` |
+| `role` + `roles` | `role` + `extra_roles` als Enum-Arrays |
+| `users.teamId` und `teams.member_ids` | nur `users.team_id`; Mentoren in `team_mentors` |
+| `areas.team_ids` und `teams.area_id` | nur `teams.area_id` |
+| `subscriptions.type = "addon"` | `subscriptions.is_addon` |
+| rund 50 fachliche Felder im Nutzerdokument | gehören dem jeweiligen Modul und kommen mit dessen Portierung |
+| TTL-Indizes | `RetentionRule` je Modul, stündlicher Job mit Advisory-Lock |
 | `MONGO_URI`, `MONGO_TEST_URI` | `DATABASE_URL`, `TEST_DATABASE_URL` |
 
-`users.profile` ist eine Übergangslösung: Jedes Modul, das portiert wird, zieht seine Felder in echte
-Spalten oder Tabellen um (z. B. Tagesbericht, Rechnungsadresse, Pins). Neue Felder kommen nie dorthin.
+Die Profil-Antwort (`/api/auth/me`, Login) behält die Feldnamen, die der Client kennt (`roles`,
+`isWhitelisted`, `whitelistStatus`, `isBlocked` …). Fachliche Felder wie `dailyStatus`,
+`strukturleiterCustomGroups`, `partnerStatus` oder `isAnonymousInLeaderboard` fehlen dort, bis ihr
+Modul portiert ist.
 
 ## Übernahmeskript
 
@@ -38,18 +48,18 @@ V1_MONGO_URI=… DATABASE_URL=… npm run migrate:v1                 # echte Üb
 
 | v1 | v2 | Hinweise |
 | --- | --- | --- |
-| `users` | `users` | E-Mail klein geschrieben; unbekannte Rolle wird `berater`; doppelte E-Mail behält das zuletzt aktive Konto; Verweise auf fehlende Teams/Mentoren werden entfernt. Nicht übernommen: `lastIpAddress`, `userAgent`, `deviceIds` (Datensparsamkeit), `stripeCustomerId` (kommt mit dem Abrechnungsmodul) |
-| `teams` | `teams`, `team_members` | Mitglieder nur, wenn der Nutzer existiert |
-| `areas` | `areas`, `area_teams` | Beide v1-Zuordnungen zusammengeführt |
-| `subscriptions` | `subscriptions` | Nur Status-Felder fürs Profil |
+| `users` | `users` | Nur Kontofelder. E-Mail klein geschrieben; unbekannte Rolle wird `berater`; doppelte E-Mail behält das zuletzt aktive Konto; Verweise auf fehlende Teams/Mentoren werden entfernt; ohne `teamId` gilt das Team, in dessen `member_ids` der Nutzer steht. Nie übernommen: IP, User-Agent, Geräte-IDs |
+| `areas` | `areas` | |
+| `teams` | `teams`, `team_mentors` | Gebiet aus `area_id`, sonst aus `areas.team_ids` |
+| `subscriptions` | `subscriptions` | Nur Status-Felder fürs Profil, Stripe-IDs kommen mit dem Abrechnungsmodul |
 | `systemsettings` | `system_settings` | |
-| `refresh_tokens` | `refresh_tokens` | Nur gültige, nicht gesperrte. Gleicher SHA-256, deshalb bleibt das `vf_refresh`-Cookie gültig |
+| `refresh_tokens` | `refresh_tokens` | Nur gültige, nicht gesperrte, auf die neue UUID umgeschrieben. Gleicher SHA-256, deshalb bleibt das `vf_refresh`-Cookie gültig |
 
 Bewusst nicht übernommen: `login_failures` (nach 15 Minuten wertlos), `audit_logs` (v1 bleibt als
 read-only Archiv 90 Tage abrufbar), `consentlogs` (v2 war noch nicht live).
 
-Jedes weitere Modul hängt bei seiner Portierung einen Schritt in `migrateV1.ts` ein, mit Test in
-`migrationV1.pg.test.ts`. Offen sind unter anderem Fahrtenbuch, Enes-Gedächtnis, `userconsents`
+Jedes weitere Modul hängt bei seiner Portierung einen Schritt in `migrateV1.ts` ein, übersetzt v1-IDs
+über `ctx.ids` und bekommt einen Test in `migrationV1.pg.test.ts`. Offen sind unter anderem Fahrtenbuch, Enes-Gedächtnis, `userconsents`
 (GPS-Widerspruch, rechtlich wichtig), Visits/Leads, Battle, Abrechnung.
 
 ## Ablauf am Umstiegstag
@@ -66,8 +76,8 @@ v2 nicht parallel auf echten Daten.
 5. **Schema:** `npm run db:migrate` gegen Produktion.
 6. **Probe:** `migrate:v1 -- --dry-run` gegen Produktion, Zahlen mit der letzten Staging-Probe vergleichen.
 7. **Übernahme:** `migrate:v1`.
-8. **v2 starten** mit demselben `JWT_SECRET` wie v1. Laufende Access-Tokens (15 Min.) und Refresh-Cookies
-   (7 Tage) gelten weiter, niemand muss sich neu anmelden.
+8. **v2 starten.** Alte Access-Tokens (ObjectId) lehnt v2 ab, der Client holt sich mit dem
+   Refresh-Cookie sofort ein neues. Niemand muss sich neu anmelden.
 9. **Nginx auf v2 umstellen**, Stichproben: Login, Profil, Teamansicht, `/api/health` meldet `connected`.
 10. **Zurück, falls nötig:** Nginx wieder auf v1. Da v1 nicht verändert wurde, ist es exakt im Stand von
     Schritt 3. Daten, die in v2 seit Schritt 8 entstanden sind, gehen dabei verloren, deshalb die
@@ -78,4 +88,4 @@ v2 nicht parallel auf echten Daten.
 - **Hosting** der Produktionsdatenbank (eigener Server oder Managed in der EU), Backups mit
   Point-in-Time-Restore, TLS (`?sslmode=require`).
 - **Mongo-Nutzer mit Rolle `read`** für das Skript in v1 anlegen (Emre, ohne Änderung am v1-Code).
-- Was in `users.profile` liegt, wandert je Modul in Spalten.
+- Die fachlichen Nutzerfelder aus v1 je Modul übernehmen (Liste in `docs/umstieg-postgres.md` oben).

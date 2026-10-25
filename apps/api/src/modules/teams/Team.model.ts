@@ -1,33 +1,31 @@
-import { sql } from "drizzle-orm";
-import { boolean, check, index, pgTable, primaryKey, text, timestamp, type AnyPgColumn } from "drizzle-orm/pg-core";
-import { sqlList } from "../../lib/db/sqlList";
+import { boolean, index, pgTable, primaryKey, text, timestamp, uuid, type AnyPgColumn } from "drizzle-orm/pg-core";
+import { newId } from "../../lib/db/ids";
 import { users } from "../users/User.model";
-
-export const TEAM_MEMBER_ROLES = ["member", "mentor"] as const;
+import { areas } from "./Area.model";
 
 /**
- * Teams aus v1 (`teams`). Die Mitgliederlisten `member_ids` und `mentor_ids` aus v1 werden zur
- * Tabelle `team_members`, damit Abfragen wie "in welchem Team ist dieser Nutzer?" einen Index haben.
+ * Teams. Wer Mitglied ist, steht nur an `users.team_id` (eine Quelle, kein doppeltes
+ * `member_ids` wie in v1). Mentoren eines Teams stehen in `team_mentors`.
  */
-export const teams = pgTable("teams", {
-  id: text().primaryKey(),
-  name: text().notNull().default(""),
-  teamLeaderId: text().references((): AnyPgColumn => users.id, { onDelete: "set null" }),
-  isActive: boolean().notNull().default(true),
-  createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
-  updatedAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
-}, (table) => [index("teams_team_leader_id_idx").on(table.teamLeaderId)]);
-
-export const teamMembers = pgTable(
-  "team_members",
+export const teams = pgTable(
+  "teams",
   {
-    teamId: text().notNull().references(() => teams.id, { onDelete: "cascade" }),
-    userId: text().notNull().references(() => users.id, { onDelete: "cascade" }),
-    role: text({ enum: TEAM_MEMBER_ROLES }).notNull(),
+    id: uuid().primaryKey().$defaultFn(() => newId()),
+    name: text().notNull(),
+    teamLeaderId: uuid().references((): AnyPgColumn => users.id, { onDelete: "set null" }),
+    areaId: uuid().references((): AnyPgColumn => areas.id, { onDelete: "set null" }),
+    isActive: boolean().notNull().default(true),
+    createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
   },
-  (table) => [
-    primaryKey({ columns: [table.teamId, table.userId, table.role] }),
-    index("team_members_user_id_idx").on(table.userId),
-    check("team_members_role_valid", sql`${table.role} in (${sqlList(TEAM_MEMBER_ROLES)})`),
-  ],
+  (table) => [index("teams_team_leader_id_idx").on(table.teamLeaderId), index("teams_area_id_idx").on(table.areaId)],
+);
+
+export const teamMentors = pgTable(
+  "team_mentors",
+  {
+    teamId: uuid().notNull().references(() => teams.id, { onDelete: "cascade" }),
+    userId: uuid().notNull().references(() => users.id, { onDelete: "cascade" }),
+  },
+  (table) => [primaryKey({ columns: [table.teamId, table.userId] }), index("team_mentors_user_id_idx").on(table.userId)],
 );

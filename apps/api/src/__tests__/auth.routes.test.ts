@@ -61,14 +61,14 @@ describe("POST /api/auth/login", () => {
   });
 
   it("meldet nicht freigegebene Konten mit whitelistStatus wie v1", async () => {
-    const pending = makeUser({ email: "neu@example.de", isWhitelisted: false, whitelistStatus: "pending" });
+    const pending = makeUser({ email: "neu@example.de", approvalStatus: "pending" });
     const res = await request(setup([pending]).app).post("/api/auth/login").send({ email: pending.email, password: PASSWORD });
     expect(res.status).toBe(403);
     expect(res.body).toMatchObject({ success: false, whitelistStatus: "pending" });
   });
 
   it("verrät die Sperre erst nach richtigem Passwort", async () => {
-    const blocked = makeUser({ email: "gesperrt@example.de", isBlocked: true, blockReason: "Test" });
+    const blocked = makeUser({ email: "gesperrt@example.de", blockedAt: new Date(), blockReason: "Test" });
     const { app } = setup([blocked]);
     const wrong = await request(app).post("/api/auth/login").send({ email: blocked.email, password: "falsch" });
     expect(wrong.status).toBe(401);

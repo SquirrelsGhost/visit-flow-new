@@ -7,14 +7,12 @@ interface Row extends ScopeUser {
   isActive?: boolean;
   strukturleiterId?: string;
   mentorId?: string;
-  legacyId?: string;
 }
 
 function source(rows: Row[], areas: Record<string, string[]> = {}): ScopeSource {
   const active = rows.filter((r) => r.isActive !== false);
   return {
     user: async (id) => rows.find((r) => r.id === id) ?? null,
-    userByAnyId: async (anyId) => rows.find((r) => r.id === anyId || r.legacyId === anyId) ?? null,
     activeUsers: async ({ teamIds, strukturleiterId, mentorIds }) =>
       active.filter(
         (r) =>
@@ -32,7 +30,7 @@ const rows: Row[] = [
   { id: "admin", role: "admin" },
   { id: "admin-in-a", role: "admin", teamId: "A" },
   { id: "leiter-a", role: "teamleiter", teamId: "A" },
-  { id: "berater-a", role: "berater", teamId: "A", legacyId: "alt-123" },
+  { id: "berater-a", role: "berater", teamId: "A" },
   { id: "ex-a", role: "berater", teamId: "A", isActive: false },
   { id: "berater-b", role: "berater", teamId: "B" },
   { id: "gm", role: "gebietsmanager" },
@@ -53,7 +51,6 @@ describe("AccessScope", () => {
     const denied = vi.fn();
     const scope = new AccessScope(source(rows), denied);
     expect(await scope.canAccessUser(as("leiter-a", "teamleiter"), "berater-a")).toBe(true);
-    expect(await scope.canAccessUser(as("leiter-a", "teamleiter"), "alt-123")).toBe(true);
     expect(await scope.canAccessUser(as("berater-a"), "berater-b")).toBe(false);
     expect(await scope.canAccessTeam(as("berater-a"), "B")).toBe(false);
     expect(denied).toHaveBeenCalledWith("USER", "berater-b", expect.objectContaining({ id: "berater-a" }));

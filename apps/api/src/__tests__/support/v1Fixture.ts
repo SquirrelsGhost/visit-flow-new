@@ -9,17 +9,18 @@ export const NOW = new Date("2026-10-24T12:00:00Z");
 
 /** Ein kleiner v1-Bestand wie in MongoDB: ObjectIds, Datumswerte, Altlasten und kaputte Verweise. */
 export function v1Fixture() {
-  const id = { leader: new ObjectId(), berater: new ObjectId(), dup: new ObjectId(), gm: new ObjectId(), team: new ObjectId(), area: new ObjectId() };
+  const id = { leader: new ObjectId(), berater: new ObjectId(), memberOnly: new ObjectId(), dup: new ObjectId(), gm: new ObjectId(), team: new ObjectId(), area: new ObjectId() };
   const hash = bcrypt.hashSync(V1_PASSWORD, 4).replace(/^\$2b\$/, "$2a$");
   const collections: Record<string, V1Doc[]> = {
     users: [
-      { _id: id.leader, email: "Leiter@Example.de ", password: hash, name: "Lea Leiter", role: "teamleiter", isActive: true, isWhitelisted: true, whitelistStatus: "approved", teamId: String(id.team), lastActivity: new Date("2026-10-20"), billingCity: "Köln", lastIpAddress: "203.0.113.1", deviceIds: ["x"] },
+      { _id: id.leader, email: "Leiter@Example.de ", password: hash, name: "Lea Leiter", role: "teamleiter", isActive: true, isWhitelisted: true, whitelistStatus: "approved", teamId: String(id.team), lastActivity: new Date("2026-10-20"), phone: "0221 123", billingCity: "Köln", lastIpAddress: "203.0.113.1", deviceIds: ["x"] },
       { _id: id.berater, id: "legacy-uuid-1", email: "berater@example.de", password: hash, name: "Ben", role: "superheld", isWhitelisted: true, whitelistStatus: "approved", teamId: String(id.team), mentorId: String(new ObjectId()), dailyPins: [{ street: "Hauptstr.", at: new Date("2026-10-01") }], createdAt: "2026-01-02T03:04:05.000Z" },
+      { _id: id.memberOnly, email: "mitglied@example.de", name: "Mia", role: "berater", roles: ["berater", "mentor"], isBlocked: true, blockReason: "Test", isWhitelisted: false, whitelistStatus: "pending" },
       { _id: id.dup, email: "leiter@example.de", name: "Altkonto", role: "berater", lastActivity: new Date("2025-01-01") },
       { _id: id.gm, email: "gm@example.de", name: "Gina", role: "gebietsmanager", isWhitelisted: true, whitelistStatus: "approved" },
       { _id: new ObjectId(), name: "ohne E-Mail" },
     ],
-    teams: [{ _id: id.team, name: "Trio Nord", team_leader_id: id.leader, member_ids: [id.berater, new ObjectId()], mentor_ids: [], is_active: true, area_id: id.area }],
+    teams: [{ _id: id.team, name: "Trio Nord", team_leader_id: id.leader, member_ids: [id.berater, id.memberOnly, new ObjectId()], mentor_ids: [id.leader], is_active: true, area_id: id.area }],
     areas: [{ _id: id.area, name: "West", manager_id: id.gm, team_ids: [id.team], is_active: true }],
     subscriptions: [{ _id: new ObjectId(), userId: String(id.berater), planId: "pro-monthly", status: "active", createdAt: new Date("2026-09-01") }],
     systemsettings: [{ _id: new ObjectId(), showTeamLeiterLiveTracking: false }],
