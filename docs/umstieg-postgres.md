@@ -33,8 +33,8 @@ Modul portiert ist.
 `apps/api/src/migration/v1/`, Aufruf aus `apps/api`:
 
 ```bash
-V1_MONGO_URI=… DATABASE_URL=… npm run migrate:v1 -- --dry-run   # Probe, speichert nichts
-V1_MONGO_URI=… DATABASE_URL=… npm run migrate:v1                 # echte Übernahme
+V1_MONGO_URI=… DATABASE_URL=… DATA_CIPHER_KEY=… npm run migrate:v1 -- --dry-run   # Probe, speichert nichts
+V1_MONGO_URI=… DATABASE_URL=… DATA_CIPHER_KEY=… npm run migrate:v1                 # echte Übernahme
 ```
 
 - Liest nur. Das Interface zur Quelle kennt nur `read`, und das Skript bricht ab, wenn der Mongo-Nutzer
@@ -54,12 +54,14 @@ V1_MONGO_URI=… DATABASE_URL=… npm run migrate:v1                 # echte Üb
 | `subscriptions` | `subscriptions` | Nur Status-Felder fürs Profil, Stripe-IDs kommen mit dem Abrechnungsmodul |
 | `systemsettings` | `system_settings` | |
 | `refresh_tokens` | `refresh_tokens` | Nur gültige, nicht gesperrte, auf die neue UUID umgeschrieben. Gleicher SHA-256, deshalb bleibt das `vf_refresh`-Cookie gültig |
+| `enesmemories` | `coach_memories` | Enes-Gedächtnis, mit `DATA_CIPHER_KEY` verschlüsselt. Frist 180 Tage ab v1-Zeitstempel, Abgelaufenes bleibt weg; `context` wird `fact`; Embeddings fallen weg (v2 sucht nicht semantisch) |
+| `ai_chat_logs` | `copilot_logs` | Nur Gespräche mit 👍/👎 (daraus lernt Enes), verschlüsselt, Sparte `telco`. Nicht übernommen: `ai_success_examples` (team-weite Beispielsammlung, gibt es in v2 noch nicht) |
 
 Bewusst nicht übernommen: `login_failures` (nach 15 Minuten wertlos), `audit_logs` (v1 bleibt als
 read-only Archiv 90 Tage abrufbar), `consentlogs` (v2 war noch nicht live).
 
 Jedes weitere Modul hängt bei seiner Portierung einen Schritt in `migrateV1.ts` ein, übersetzt v1-IDs
-über `ctx.ids` und bekommt einen Test in `migrationV1.pg.test.ts`. Offen sind unter anderem Fahrtenbuch, Enes-Gedächtnis, `userconsents`
+über `ctx.ids` und bekommt einen Test in `migrationV1.pg.test.ts`. Offen sind unter anderem Fahrtenbuch, `userconsents`
 (GPS-Widerspruch, rechtlich wichtig), Visits/Leads, Battle, Abrechnung.
 
 ## Ablauf am Umstiegstag

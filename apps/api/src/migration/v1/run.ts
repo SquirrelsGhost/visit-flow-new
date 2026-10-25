@@ -7,7 +7,9 @@ import { mongoV1Source, readConnectionStatus, writeAccessProblems } from "./sour
 /**
  * Einmalige Übernahme von v1 (MongoDB, nur lesen) nach v2 (PostgreSQL).
  *
- *   V1_MONGO_URI=… DATABASE_URL=… npm run migrate:v1 -- --dry-run
+ *   V1_MONGO_URI=… DATABASE_URL=… DATA_CIPHER_KEY=… npm run migrate:v1 -- --dry-run
+ *
+ * DATA_CIPHER_KEY muss derselbe sein wie in der v2-API (Enes-Daten werden damit verschlüsselt).
  *
  * --dry-run                 alles ausführen, dann zurückrollen (Probe ohne Änderung)
  * --reset                   übernommene Tabellen vorher leeren (nur Proben, nicht mit NODE_ENV=production)
@@ -18,7 +20,9 @@ const args = new Set(process.argv.slice(2));
 async function main(): Promise<void> {
   const mongoUri = process.env.V1_MONGO_URI;
   const databaseUrl = process.env.DATABASE_URL;
-  if (!mongoUri || !databaseUrl) throw new Error("V1_MONGO_URI und DATABASE_URL müssen gesetzt sein");
+  const cipherKey = process.env.DATA_CIPHER_KEY;
+  if (!mongoUri || !databaseUrl || !cipherKey) throw new Error("V1_MONGO_URI, DATABASE_URL und DATA_CIPHER_KEY müssen gesetzt sein");
+  const memoryDays = Number(process.env.COPILOT_MEMORY_DAYS ?? 180);
   const reset = args.has("--reset");
   if (reset && process.env.NODE_ENV === "production") throw new Error("--reset ist mit NODE_ENV=production gesperrt");
 
@@ -33,7 +37,7 @@ async function main(): Promise<void> {
     }
     await runMigrations(target.db);
     const dryRun = args.has("--dry-run");
-    const report = await migrateV1(target.db, mongoV1Source(v1), { dryRun, reset });
+    const report = await migrateV1(target.db, mongoV1Source(v1), { dryRun, reset, copilot: { cipherKey, memoryDays } });
     console.info(report.summary());
     console.info(dryRun ? "[Migration v1] Probe: nichts gespeichert" : "[Migration v1] Fertig, alles in einer Transaktion gespeichert");
   } finally {

@@ -6,6 +6,7 @@ import type { V1Doc, V1Source } from "../../migration/v1/source";
 export const V1_PASSWORD = "v1-passwort";
 export const V1_RAW_REFRESH = "a1".repeat(64);
 export const NOW = new Date("2026-10-24T12:00:00Z");
+export const V1_CIPHER_KEY = "c".repeat(40);
 
 /** Ein kleiner v1-Bestand wie in MongoDB: ObjectIds, Datumswerte, Altlasten und kaputte Verweise. */
 export function v1Fixture() {
@@ -24,6 +25,15 @@ export function v1Fixture() {
     areas: [{ _id: id.area, name: "West", manager_id: id.gm, team_ids: [id.team], is_active: true }],
     subscriptions: [{ _id: new ObjectId(), userId: String(id.berater), planId: "pro-monthly", status: "active", createdAt: new Date("2026-09-01") }],
     systemsettings: [{ _id: new ObjectId(), showTeamLeiterLiveTracking: false }],
+    enesmemories: [
+      { _id: new ObjectId(), userId: id.berater, type: "context", content: "Läuft lieber abends", source: "chat", embedding: [0.1, 0.2], createdAt: new Date("2026-10-01") },
+      { _id: new ObjectId(), userId: id.berater, type: "win", content: "Uralt", createdAt: new Date("2026-01-01") },
+      { _id: new ObjectId(), userId: new ObjectId(), type: "fact", content: "Kein Nutzer", createdAt: new Date("2026-10-01") },
+    ],
+    ai_chat_logs: [
+      { _id: new ObjectId(), userId: id.leader, userMessage: "Einwand Preis?", aiResponse: "Rechne vor.", feedback: "up", createdAt: new Date("2026-10-20") },
+      { _id: new ObjectId(), userId: id.leader, userMessage: "Hallo", aiResponse: "Hi", feedback: null, createdAt: new Date("2026-10-21") },
+    ],
     refresh_tokens: [
       { _id: new ObjectId(), tokenHash: hashRefreshToken(V1_RAW_REFRESH), userId: id.leader, familyId: "fam-1", createdAt: new Date("2026-10-23"), expiresAt: new Date("2026-10-30"), isRevoked: false },
       { _id: new ObjectId(), tokenHash: "f".repeat(64), userId: id.leader, familyId: "fam-0", createdAt: new Date("2026-10-01"), expiresAt: new Date("2026-10-08"), isRevoked: false },

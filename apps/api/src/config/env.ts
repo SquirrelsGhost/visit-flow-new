@@ -15,6 +15,13 @@ const envSchema = z
     DATA_CIPHER_KEY: secret("DATA_CIPHER_KEY"),
     BLIND_INDEX_KEY: secret("BLIND_INDEX_KEY"),
     CONSENT_LOG_DAYS: z.coerce.number().int().positive().default(1095),
+    // Enes (KI-Coach). Ohne Endpoint und Key läuft die App mit lokalem Wissen weiter.
+    AZURE_OPENAI_ENDPOINT: z.string().url().optional(),
+    AZURE_OPENAI_API_KEY: z.string().min(1).optional(),
+    AZURE_OPENAI_DEPLOYMENT: z.string().min(1).default("gpt-4o"),
+    AZURE_OPENAI_API_VERSION: z.string().min(1).default("2024-10-21"),
+    COPILOT_MEMORY_DAYS: z.coerce.number().int().positive().default(180),
+    COPILOT_LOG_DAYS: z.coerce.number().int().positive().default(90),
   })
   .refine((env) => env.DATA_CIPHER_KEY !== env.BLIND_INDEX_KEY, {
     message: "DATA_CIPHER_KEY und BLIND_INDEX_KEY müssen verschieden sein",
