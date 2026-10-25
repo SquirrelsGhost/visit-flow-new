@@ -1,0 +1,55 @@
+# PostgreSQL für visit-flow v2 auf dem eigenen Server. Anleitung: docs/postgres-server.md
+#
+# Alles liegt in einem eigenen Ordner (Standard /srv/visit-flow/postgres, nur für root lesbar):
+#   data/      Datenbankdateien
+#   secrets/   Passwörter, je eine Datei, chmod 600
+#   backups/   verschlüsselte Sicherungen (backup.sh)
+name: visit-flow-db
+
+services:
+  postgres:
+    image: postgres:18
+    restart: unless-stopped
+    # Nur vom Server selbst erreichbar, nie aus dem Internet
+    ports:
+      - "127.0.0.1:5432:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD_FILE: /run/secrets/postgres_password
+      POSTGRES_INITDB_ARGS: "--auth-host=scram-sha-256 --auth-local=scram-sha-256 --data-checksums"
+      PGDATA: /var/lib/postgresql/data
+    command:
+      - postgres
+      - -c
+      - password_encryption=scram-sha-256
+      - -c
+      - log_connections=on
+      - -c
+      - log_disconnections=on
+      - -c
+      - log_min_duration_statement=1000
+      - -c
+      - max_connections=100
+    secrets:
+      - postgres_password
+      - visitflow_owner_password
+      - visitflow_app_password
+    volumes:
+      - ${VF_DB_DIR:-/srv/visit-flow/postgres}/data:/var/lib/postgresql/data
+      - ./init:/docker-entrypoint-initdb.d:ro
+    shm_size: 256mb
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d visitflow"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    security_opt:
+      - no-new-privileges:true
+
+secrets:
+  postgres_password:
+    file: ${VF_DB_DIR:-/srv/visit-flow/postgres}/secrets/postgres_password
+  visitflow_owner_password:
+    file: ${VF_DB_DIR:-/srv/visit-flow/postgres}/secrets/visitflow_owner_password
+  visitflow_app_password:
+    file: ${VF_DB_DIR:-/srv/visit-flow/postgres}/secrets/visitflow_app_password

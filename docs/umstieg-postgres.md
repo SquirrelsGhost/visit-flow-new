@@ -59,8 +59,9 @@ Bewusst nicht übernommen: `login_failures` (nach 15 Minuten wertlos), `audit_lo
 read-only Archiv 90 Tage abrufbar), `consentlogs` (v2 war noch nicht live).
 
 Jedes weitere Modul hängt bei seiner Portierung einen Schritt in `migrateV1.ts` ein, übersetzt v1-IDs
-über `ctx.ids` und bekommt einen Test in `migrationV1.pg.test.ts`. Offen sind unter anderem Fahrtenbuch, Enes-Gedächtnis, `userconsents`
-(GPS-Widerspruch, rechtlich wichtig), Visits/Leads, Battle, Abrechnung.
+über `ctx.ids` und bekommt einen Test in `migrationV1.pg.test.ts`. Das Enes-Gedächtnis (v1 `EnesMemory`)
+kommt mit #5 als eigener Schritt mit, das Fahrtenbuch braucht keinen (v1 hielt es nur im localStorage).
+Offen sind noch `userconsents` (GPS-Widerspruch, rechtlich wichtig), Visits/Leads, Battle, Abrechnung.
 
 ## Ablauf am Umstiegstag
 
@@ -85,7 +86,7 @@ v2 nicht parallel auf echten Daten.
 
 ## Offene Punkte
 
-- **Hosting** der Produktionsdatenbank (eigener Server oder Managed in der EU), Backups mit
-  Point-in-Time-Restore, TLS (`?sslmode=require`).
+- **Hosting:** entschieden, eigener Server in eigenem Ordner, siehe `docs/postgres-server.md`.
+  Auf dem Server einrichten und die Sicherung einmal testweise zurückspielen.
 - **Mongo-Nutzer mit Rolle `read`** für das Skript in v1 anlegen (Emre, ohne Änderung am v1-Code).
 - Die fachlichen Nutzerfelder aus v1 je Modul übernehmen (Liste in `docs/umstieg-postgres.md` oben).

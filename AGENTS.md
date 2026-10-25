@@ -44,6 +44,8 @@ Ausnahmen vom Zeilenlimit stehen in `MAX_LINES_AUSNAHMEN` in `eslint.config.mjs`
 
 ## 4. Datenbank (PostgreSQL)
 
+- **Die ganze App nutzt nur PostgreSQL** (Emre, 25.10.2026). Keine zweite Datenbank, kein MongoDB, Redis oder SQLite im Server. Was sonst Redis erledigen würde (Sperren, Zähler, Warteschlangen, Benachrichtigungen), läuft über Tabellen, Advisory-Locks oder LISTEN/NOTIFY. Die einzige Ausnahme ist der `mongodb`-Treiber im Übernahmeskript, der v1 nur liest.
+- Betrieb, Rollen und Sicherungen stehen in `docs/postgres-server.md`. Die API verbindet sich als `visitflow_app` (nur Lesen und Schreiben), Migrationen laufen als `visitflow_owner`.
 - Tabellen werden in `<Name>.model.ts` mit Drizzle beschrieben (Spalten camelCase im Code, snake_case in der Datenbank).
 - Jede Schemaänderung: Model ändern, `npm run db:generate --workspace=@visit-flow/api`, die erzeugte SQL-Datei in `apps/api/drizzle/` lesen und mit committen. Die CI bricht ab, wenn Model und Migrationen auseinanderlaufen.
 - Migrationen nie nachträglich ändern, nur neue anhängen. Eingespielt wird mit `npm run db:migrate` einmal pro Deploy, nicht beim Start jeder Instanz.
