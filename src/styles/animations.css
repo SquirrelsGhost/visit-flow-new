@@ -1,0 +1,142 @@
+/* Animationen aus v1 (src/index.css, Login.tsx, AuthHeader.tsx) */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes twinkle {
+  0%,
+  100% {
+    opacity: 0.1;
+  }
+  50% {
+    opacity: 0.8;
+  }
+}
+
+@keyframes authSpin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@utility animate-fade-in {
+  animation: fadeIn 0.6s ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-fade-in {
+    animation: none;
+    transition: none;
+  }
+}
+
+/* --- Veredelung gegenüber v1 --- */
+
+/* Langsam treibende Lichtkreise im Hintergrund */
+@keyframes auroraDrift {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  33% {
+    transform: translate3d(30px, -20px, 0) scale(1.08);
+  }
+  66% {
+    transform: translate3d(-24px, 18px, 0) scale(0.96);
+  }
+}
+
+/* Lichtreflex, der über den Titel und den Button gleitet */
+@keyframes sheen {
+  from {
+    background-position: 200% 0;
+  }
+  to {
+    background-position: -200% 0;
+  }
+}
+
+/* Kurzes Kopfschütteln bei einem Anmeldefehler */
+@keyframes softShake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  20%,
+  60% {
+    transform: translateX(-5px);
+  }
+  40%,
+  80% {
+    transform: translateX(5px);
+  }
+}
+
+@utility animate-aurora {
+  animation: auroraDrift 18s ease-in-out infinite;
+  will-change: transform;
+}
+
+@utility animate-shake {
+  animation: softShake 0.4s cubic-bezier(0.36, 0.07, 0.19, 0.97);
+}
+
+/* Titel: roter Verlauf mit einem feinen, langsam wandernden Glanz */
+@utility text-sheen {
+  background-image: linear-gradient(
+    110deg,
+    #dc2626 0%,
+    #b91c1c 38%,
+    #ef4444 50%,
+    #b91c1c 62%,
+    #dc2626 100%
+  );
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: sheen 7s linear infinite;
+}
+
+/* Button: Glanzstreifen läuft beim Darüberfahren einmal durch */
+@utility button-sheen {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+
+  &::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background: linear-gradient(110deg, transparent 25%, rgb(255 255 255 / 0.28) 50%, transparent 75%);
+    transform: translateX(-110%);
+    transition: transform 0.9s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  &:hover:not(:disabled)::after {
+    transform: translateX(110%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-aurora,
+  .text-sheen,
+  .animate-shake {
+    animation: none;
+  }
+}
+
+.dark .text-sheen {
+  background-image: linear-gradient(110deg, #ef4444 0%, #dc2626 35%, #fca5a5 50%, #dc2626 65%, #b91c1c 100%);
+}

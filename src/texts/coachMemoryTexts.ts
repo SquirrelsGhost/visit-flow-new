@@ -1,0 +1,53 @@
+import type { CoachWeakSpot } from "../lib/coach/coachTypes";
+import type { CoachMemoryKind } from "../lib/copilot/coachMemoryApi";
+
+/** Texte der Ansicht "Was Enes über mich weiß". */
+export const coachMemoryTexts = {
+  title: "Was Enes über mich weiß",
+  subtitle: "Ansehen, einzeln löschen oder alles vergessen.",
+  rowSubtitle: "Gemerktes ansehen und löschen",
+  doorsLabel: "Aus deinen Türen",
+  doorsFooter: "Rechnet die App auf deinem Gerät aus den letzten 4 Wochen. Enes bekommt nur diese Zahlen, keine Straßen, Hausnummern oder Kundennamen.",
+  memoryLabel: "Gemerkt",
+  memoryFooter: "Erinnerungen löschen sich nach 6 Monaten von selbst.",
+  kinds: {
+    preference: "Wie du arbeitest",
+    fact: "Über dich",
+    win: "Deine Erfolge",
+    weakspot: "Woran ihr arbeitet",
+  } satisfies Record<CoachMemoryKind, string>,
+  source: { user: "Hast du gesagt", enes: "Hat Enes gemerkt" },
+  date: (iso: string) => new Date(iso).toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit", year: "2-digit" }),
+  empty: "Noch nichts gemerkt",
+  emptyHint: "Sag Enes zum Beispiel: „Merk dir, ich laufe lieber abends.“",
+  loading: "Lade, was Enes sich gemerkt hat …",
+  offline: "Gerade nicht erreichbar",
+  offlineHint: "Die Erinnerungen liegen auf dem Server. Versuch es gleich nochmal.",
+  demo: "Im Demo-Modus merkt sich Enes nichts.",
+  forget: "Vergessen",
+  forgotten: "Enes hat das vergessen.",
+  forgetFailed: "Hat nicht geklappt. Versuch es gleich nochmal.",
+  forgetAll: "Alles vergessen",
+  forgetAllHint: "Löscht alle Erinnerungen und deine Gespräche mit Enes.",
+  forgetAllConfirm: "Wirklich alles löschen?",
+  forgetAllConfirmHint: "Nochmal tippen. Das lässt sich nicht rückgängig machen.",
+  forgotAll: "Enes hat alles über dich vergessen.",
+  facts: {
+    learning: "Enes lernt dich kennen",
+    learningValue: (doors: number, needed: number) => `${doors} / ${needed} Türen`,
+    doors: "Türen",
+    hitRate: "Angetroffen",
+    salesRate: "Abschluss je Gespräch",
+    bestWindow: "Beste Zeit",
+    weakSpot: "Woran es hakt",
+    topCategory: "Stärkste Produktgruppe",
+    streak: "Serie",
+    days: (n: number) => `${n} ${n === 1 ? "Tag" : "Tage"}`,
+  },
+  spot: {
+    notMet: "Nicht angetroffen",
+    noInterest: "Einstieg",
+    supplied: "„Versorgt“",
+    closing: "Abschluss",
+  } satisfies Record<Exclude<CoachWeakSpot, null>, string>,
+} as const;

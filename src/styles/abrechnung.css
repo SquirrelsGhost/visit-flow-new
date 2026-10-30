@@ -1,0 +1,14 @@
+/* Abrechnung: Hintergrund kommt seit dem Glas-Design vom App-Rahmen, die Klasse bleibt durchsichtig */
+.abr-bg {
+  background: transparent;
+}
+
+/* Ladebalken unter der Upload-Fläche */
+@keyframes abr-scan {
+  0% {
+    transform: translateX(-110%);
+  }
+  100% {
+    transform: translateX(330%);
+  }
+}

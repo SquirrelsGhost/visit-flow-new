@@ -1,0 +1,212 @@
+/* Eigener Standort auf der Karte, Optik aus v1 (TrackingMap .vf-me), Puls weicher */
+.vf-me {
+  position: relative;
+  width: 18px;
+  height: 18px;
+}
+
+.vf-me-dot {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: #3b82f6;
+  border: 3px solid #fff;
+  box-shadow:
+    0 0 0 5px rgb(59 130 246 / 0.25),
+    0 3px 10px rgb(0 0 0 / 0.5);
+}
+
+.vf-me-ping {
+  position: absolute;
+  inset: -3px;
+  border-radius: 50%;
+  border: 2px solid #3b82f6;
+  opacity: 0.7;
+  animation: vfPing 2.2s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+}
+
+@keyframes vfPing {
+  0% {
+    transform: scale(1);
+    opacity: 0.7;
+  }
+  100% {
+    transform: scale(2.8);
+    opacity: 0;
+  }
+}
+
+/* Kollegen-Pin (v1 .vf-mate): Tropfen in Kollegenfarbe, Buchstabe bleibt aufrecht, erscheint weich */
+.vf-mate {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50% 50% 50% 4px;
+  rotate: 45deg;
+  background: var(--vf-mate-color, #e2001a);
+  border: 2px solid #fff;
+  box-shadow: 0 4px 12px rgb(0 0 0 / 0.35);
+  cursor: pointer;
+  animation: vfMateIn 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.vf-mate-letter {
+  rotate: -45deg;
+  color: #fff;
+  font-weight: 800;
+  font-size: 11px;
+  line-height: 1;
+}
+
+@keyframes vfMateIn {
+  from {
+    opacity: 0;
+    scale: 0.4;
+  }
+  to {
+    opacity: 1;
+    scale: 1;
+  }
+}
+
+.vf-mate-popup {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 110px;
+  padding: 2px 4px;
+  font-family: inherit;
+}
+
+.vf-mate-popup-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.vf-mate-popup-label {
+  display: block;
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #94a3b8;
+  line-height: 1;
+}
+
+.vf-mate-popup-name {
+  display: block;
+  margin-top: 2px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+/* Mapbox setzt position: relative mit gleicher Spezifität wie .absolute (v1-Fehler: Karte fiel zusammen) */
+.vf-map-canvas.mapboxgl-map {
+  position: absolute;
+  inset: 0;
+}
+
+/* Mapbox-Attribution und Logo ausblenden wie in v1 */
+.vf-map-canvas .mapboxgl-ctrl-attrib,
+.vf-map-canvas .mapboxgl-ctrl-logo {
+  display: none !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .vf-me-ping,
+  .vf-mate {
+    animation: none;
+  }
+}
+
+/* Lasso-Eckpunkt: große Griff-Fläche, Glas-Ring, hebt sich beim Ziehen an */
+.vf-lasso-vertex {
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  cursor: grab;
+  touch-action: none;
+  animation: vfLassoIn 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.vf-lasso-dot {
+  width: 18px;
+  height: 18px;
+  border-radius: 9999px;
+  background: #8b5cf6;
+  border: 3px solid #fff;
+  box-shadow: 0 0 0 6px rgb(139 92 246 / 0.22), 0 6px 16px rgb(0 0 0 / 0.35);
+  transition: scale 0.2s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.2s ease;
+}
+
+.vf-lasso-vertex.is-first .vf-lasso-dot {
+  background: #fff;
+  border-color: #8b5cf6;
+}
+
+.vf-lasso-vertex.is-selected .vf-lasso-dot {
+  scale: 1.25;
+  box-shadow: 0 0 0 8px rgb(139 92 246 / 0.4), 0 8px 20px rgb(0 0 0 / 0.4);
+}
+
+.vf-lasso-vertex.is-dragging {
+  cursor: grabbing;
+}
+
+.vf-lasso-vertex.is-dragging .vf-lasso-dot {
+  scale: 1.4;
+  box-shadow: 0 0 0 10px rgb(139 92 246 / 0.3), 0 12px 24px rgb(0 0 0 / 0.45);
+}
+
+.vf-lasso-mid {
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  cursor: copy;
+  touch-action: none;
+  transition: opacity 0.2s ease;
+}
+
+.vf-lasso-mid-dot {
+  width: 16px;
+  height: 16px;
+  display: grid;
+  place-items: center;
+  border-radius: 9999px;
+  background: rgb(255 255 255 / 0.75);
+  backdrop-filter: blur(6px);
+  border: 1.5px solid rgb(139 92 246 / 0.8);
+  color: #6d28d9;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1;
+  box-shadow: 0 3px 10px rgb(0 0 0 / 0.25);
+}
+
+/* Während ein Eckpunkt gezogen wird, stimmen die Zwischenpunkte nicht mehr: ausblenden */
+[data-lasso-dragging="true"] .vf-lasso-mid {
+  opacity: 0;
+  pointer-events: none;
+}
+
+@keyframes vfLassoIn {
+  from {
+    opacity: 0;
+    scale: 0.3;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .vf-lasso-vertex,
+  .vf-lasso-dot {
+    animation: none;
+    transition: none;
+  }
+}

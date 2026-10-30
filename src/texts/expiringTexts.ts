@@ -1,0 +1,91 @@
+import type { AssignFilter, SortId, Urgency } from "../lib/expiring/expiringTypes";
+
+const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
+
+/** Bezeichnungen der v1-Kategorien (ExpiringContractsView CATEGORY_CONFIG); Unbekanntes bleibt wie geliefert. */
+const CATEGORIES: Record<string, string> = {
+  "kabel-neu": "Kabel Neukunden",
+  "kabel-bestand": "Kabel Bestandskunden",
+  glasfaser: "Glasfaser",
+  dsl: "DSL",
+  tv: "TV",
+  mobil: "Mobil",
+  router: "Router",
+};
+
+/** Texte der Seite "Verträge vor Ablauf" (Admin). Grundlage ist v1 components/admin/ExpiringContractsView.tsx. */
+export const expiringTexts = {
+  demoBadge: "Demo",
+  eyebrow: (days: number) => `Nächste ${days} Tage`,
+  count: "Verträge laufen aus",
+  soon: (n: number) => (n === 0 ? "Keiner davon in den nächsten 30 Tagen" : `${plural(n, "Vertrag", "Verträge")} schon in unter 30 Tagen`),
+  commission: "Provision",
+  average: "Ø Vertrag",
+  potential: "Potenzial",
+  potentialHint: "Leads ohne Berater",
+  topCategory: (label: string, n: number) => `Am häufigsten: ${label} (${n})`,
+  timeline: "Ablauf auf der Zeitachse",
+  today: "Heute",
+  dayMark: (days: number) => `${days} T.`,
+
+  urgency: { urgent: "Dringend", medium: "Bald", low: "Später" } satisfies Record<Urgency, string>,
+  urgencyRange: { urgent: "unter 30 Tagen", medium: "30 bis 59 Tage", low: "60 bis 90 Tage" } satisfies Record<Urgency, string>,
+  allUrgencies: "Alle",
+  urgencyFilter: "Nach Dringlichkeit filtern",
+  search: "Kunde, Adresse, Verkäufer oder Tarif",
+
+  filters: "Filter",
+  category: "Kategorie",
+  allCategories: "Alle Kategorien",
+  categoryLabel: (category: string) => CATEGORIES[category] ?? (category.replace(/[_-]+/g, " ") || "Ohne Kategorie"),
+  city: "Ort",
+  allCities: "Alle Orte",
+  assign: "Zuweisung",
+  assigns: { all: "Alle", assigned: "Zugewiesen", unassigned: "Ohne Berater" } satisfies Record<AssignFilter, string>,
+  sort: "Sortieren nach",
+  sorts: { days: "Restlaufzeit", commission: "Provision", name: "Name" } satisfies Record<SortId, string>,
+  reset: "Filter zurücksetzen",
+
+  list: "Verträge",
+  shown: (shown: number, total: number) => `${shown} von ${plural(total, "Vertrag", "Verträgen")}`,
+  group: (label: string, range: string, n: number) => `${label} · ${range} · ${n}`,
+  empty: "Keine auslaufenden Verträge",
+  emptyFiltered: "Versuche andere Filter",
+  emptyAll: (days: number) => `In den nächsten ${days} Tagen läuft kein Vertrag aus`,
+  days: (n: number) => (n <= 0 ? "Heute" : n === 1 ? "1 Tag" : `${n} Tage`),
+  daysShort: (n: number) => (n === 1 ? "Tag" : "Tage"),
+  expiresOn: (date: string) => `Ablauf ${date}`,
+  lead: "Lead",
+  advisorChip: (name: string) => `Bei ${name}`,
+  expand: "Details zeigen",
+  collapse: "Details schließen",
+
+  seller: "Verkäufer",
+  start: "Vertragsbeginn",
+  expiry: "Ablaufdatum",
+  address: "Adresse",
+  noAddress: "Keine Adresse",
+  tariff: "Tarif",
+  onMap: "Auf Karte",
+  assignedTo: "Zugewiesen an",
+  assignedSince: (date: string) => `seit ${date}`,
+  noLead: "Kein Lead: Zuweisen geht erst, wenn der Vertrag als Lead markiert ist.",
+  assignAction: "Berater zuweisen",
+  changeAction: "Ändern",
+
+  sheetTitle: "Berater zuweisen",
+  sheetSubtitle: "Weise diesem Lead einen Berater für die Nachverfolgung zu.",
+  advisorSearch: "Berater suchen",
+  advisorsLoading: "Berater werden geladen …",
+  advisorsEmpty: "Kein Berater gefunden",
+  advisorsError: "Berater konnten nicht geladen werden",
+  confirmAssign: "Zuweisen",
+  clearAssign: "Zuweisung aufheben",
+  assigned: (name: string) => `${name} zugewiesen`,
+  cleared: "Zuweisung aufgehoben",
+  assignFailed: "Zuweisung fehlgeschlagen",
+
+  loadError: "Auslaufende Verträge konnten nicht geladen werden",
+  retry: "Erneut laden",
+  noAccess: { title: "Nur für Admins", text: "Die auslaufenden Tarife zeigen Kunden aller Nutzer und sind deshalb Administratoren vorbehalten.", link: "Zur Übersicht" },
+};

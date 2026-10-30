@@ -1,0 +1,37 @@
+import type { StructureLens, StructurePeriod } from "../lib/overview/structureLogic";
+
+/** Texte der Reiter Struktur und Mentor (v1 StrukturleiterDashboard, MentorVerwaltung). */
+export const structureTexts = {
+  eyebrow: { structure: "Gruppe heute", mentor: "Mentees heute" } satisfies Record<StructureLens, string>,
+  sales: "Abschlüsse",
+  salesOne: "Abschluss",
+  line: "{doors} Türen · {conversion} % Quote",
+  week: "Woche",
+  month: "Monat",
+  people: { structure: "Mitglieder", mentor: "Mentees" } satisfies Record<StructureLens, string>,
+  actions: { report: "Auswertung", contest: "Gewinnspiel", status: "Tagesstatus" },
+  periodsLabel: "Zeitraum der Rangliste",
+  periods: { day: "Heute", week: "Woche", month: "Monat" } satisfies Record<StructurePeriod, string>,
+  ranking: "Rangliste",
+  rankingFooter: { structure: "Alle aktiven Mitglieder deiner Gruppe.", mentor: "Mentees in den ersten vier Monaten (wie v1)." } satisfies Record<StructureLens, string>,
+  dayLine: "{doors} Türen heute",
+  periodLine: "{count} heute · gestern {yesterday}",
+  empty: { structure: "In deiner Gruppe ist noch niemand.", mentor: "Du betreust gerade keine Mentees." } satisfies Record<StructureLens, string>,
+  emptyHint: { structure: "Der Teamleiter ordnet dir Mitglieder in der Verwaltung zu.", mentor: "Mentees werden in der Verwaltung oder von ihrem Strukturleiter zugeordnet." } satisfies Record<StructureLens, string>,
+  noLead: { structure: "Im Team gibt es noch keinen Strukturleiter.", mentor: "Im Team gibt es noch keinen Mentor." } satisfies Record<StructureLens, string>,
+  report: {
+    title: "Auswertung teilen",
+    hint: "Fertiger Text für eure WhatsApp-Gruppe, mit Rangliste, Status und Kommentar.",
+    copy: "Text kopieren",
+    share: "Teilen",
+    copied: "{label} kopiert",
+    failed: "Kopieren hat nicht geklappt",
+    labels: { day: "Tagesauswertung", week: "Wochenauswertung", month: "Monatsauswertung" } satisfies Record<StructurePeriod, string>,
+  },
+  remove: { structure: "Aus meiner Gruppe entfernen", mentor: "Aus der Betreuung entfernen" } satisfies Record<StructureLens, string>,
+  removeBody: { structure: "{name} bleibt im Team, gehört aber nicht mehr zu deiner Gruppe.", mentor: "{name} bleibt im Team, du betreust ihn oder sie aber nicht mehr." } satisfies Record<StructureLens, string>,
+  removed: "{name} entfernt",
+  cancel: "Abbrechen",
+  toDailyStatus: "Anwesenheit und Zeitraum",
+  toDailyStatusHint: "Tagesstatus-Seite öffnen",
+} as const;

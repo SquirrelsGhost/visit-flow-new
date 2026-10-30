@@ -1,0 +1,139 @@
+/* Grundstile aus v1 (src/index.css, App.css), nur was die portierten Seiten brauchen */
+@layer base {
+  * {
+    border-color: hsl(var(--border));
+  }
+
+  html,
+  body {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    font-size: 16px;
+    position: relative;
+    overflow: auto;
+    touch-action: manipulation;
+    scrollbar-width: none;
+  }
+
+  html::-webkit-scrollbar,
+  body::-webkit-scrollbar {
+    display: none;
+  }
+
+  body {
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: none;
+    transition: background-color 0.2s ease, color 0.2s ease;
+  }
+
+  #root {
+    width: 100%;
+    min-height: 100dvh;
+  }
+
+  /* Tailwind 4 setzt bei Buttons keinen Hand-Cursor mehr, v1 (Tailwind 3) schon */
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
+
+  input,
+  textarea,
+  select {
+    font-size: 16px;
+  }
+
+  html:not(.dark) input::placeholder,
+  html:not(.dark) textarea::placeholder,
+  .dark input::placeholder,
+  .dark textarea::placeholder {
+    color: hsl(var(--muted-foreground)) !important;
+    opacity: 1;
+  }
+
+  :root:not(.dark) {
+    color-scheme: light;
+  }
+
+  .dark {
+    color-scheme: dark;
+  }
+
+  form input,
+  form textarea,
+  form select {
+    color: hsl(var(--foreground)) !important;
+  }
+
+  input:-webkit-autofill,
+  input:-webkit-autofill:hover,
+  input:-webkit-autofill:focus,
+  input:-webkit-autofill:active,
+  input:autofill,
+  textarea:-webkit-autofill,
+  textarea:-webkit-autofill:hover,
+  textarea:-webkit-autofill:focus,
+  select:-webkit-autofill,
+  select:-webkit-autofill:hover,
+  select:-webkit-autofill:focus {
+    -webkit-text-fill-color: #0f172a !important;
+    color: #0f172a !important;
+    caret-color: #0f172a !important;
+    -webkit-box-shadow: 0 0 0 1000px #ffffff inset !important;
+    box-shadow: 0 0 0 1000px #ffffff inset !important;
+    transition: background-color 5000s ease-in-out 0s;
+  }
+
+  .dark input:-webkit-autofill,
+  .dark input:-webkit-autofill:hover,
+  .dark input:-webkit-autofill:focus,
+  .dark input:-webkit-autofill:active,
+  .dark input:autofill,
+  .dark textarea:-webkit-autofill,
+  .dark select:-webkit-autofill {
+    -webkit-text-fill-color: #f8fafc !important;
+    color: #f8fafc !important;
+    caret-color: #f8fafc !important;
+    -webkit-box-shadow: 0 0 0 1000px #141722 inset !important;
+    box-shadow: 0 0 0 1000px #141722 inset !important;
+  }
+}
+
+@utility touch-feedback {
+  transition: all 0.15s ease;
+  -webkit-tap-highlight-color: rgba(239, 68, 68, 0.1);
+
+  &:active {
+    transform: scale(0.96);
+    opacity: 0.85;
+  }
+
+  &:hover {
+    transform: scale(1.02);
+  }
+}
+
+@utility touch-manipulation {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+@utility mobile-bottom-safe {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* Größere Touch-Ziele auf dem Handy wie in v1 */
+@media screen and (max-width: 768px) {
+  /* .no-touch-target-fix: bewusst kleine Rundknöpfe der Topbar wie in v1 */
+  button:not(.no-touch-target-fix),
+  [role="button"]:not(.no-touch-target-fix),
+  .touch-feedback {
+    min-height: 48px !important;
+    min-width: 48px !important;
+    touch-action: manipulation;
+  }
+}

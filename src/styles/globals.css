@@ -1,0 +1,12 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "./theme.css";
+@import "./base.css";
+@import "./animations.css";
+@import "./map.css";
+@import "./battle.css";
+@import "./abrechnung.css";
+@import "./glass.css";
+
+/* Dark Mode wie in v1 über die Klasse .dark auf <html> */
+@custom-variant dark (&:where(.dark, .dark *));

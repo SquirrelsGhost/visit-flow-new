@@ -1,0 +1,23 @@
+import { ok, err } from "@/lib/api";
+import { hasPermission } from "@/lib/permissions";
+import { DoorsAndCrmDatabaseService } from "@/services/DoorsAndCrmDatabaseService";
+import { getSessionUser } from "@/services/sicherheit/SessionUserService";
+
+export async function POST(req: Request): Promise<Response> {
+  try {
+    const user = await getSessionUser(req);
+    if (!user || user.banned) return err("Bitte melde dich an.", 401);
+    const body = (await req.json().catch(() => ({}))) as { products?: Record<string, unknown>[] };
+    const list = Array.isArray(body.products) ? body.products : [];
+    const res = await DoorsAndCrmDatabaseService.upsertProductsBulk(
+      list,
+      user.id,
+      user.teamId,
+      hasPermission(user.permissions, "admin:*"),
+    );
+    return ok(res);
+  } catch (error) {
+    console.error("[POST /api/products/bulk]", error);
+    return err("Internal server error");
+  }
+}
