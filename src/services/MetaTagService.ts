@@ -32,6 +32,9 @@ export class MetaTagService {
       title: props.title,
       description: props.description,
       keywords: props.tags,
+      alternates: {
+        canonical: props.url,
+      },
 
       openGraph: {
         title: props.title,

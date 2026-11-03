@@ -1,9 +1,19 @@
 import type { ITranslation } from "../ITranslation";
 
-const SITE = "https://visit-flow.de";
-const IMAGE = `${SITE}/og/visit-flow.png`;
+const SITE = "https://visit-flow.com";
+const IMAGE = `${SITE}/og.png`;
 
 export const DE: ITranslation = {
+  WebsitePage: {
+    MetaTags: {
+      title: "Visit Flow – CRM, KI-Coach und Backoffice für den Haustürvertrieb",
+      description:
+        "Visit Flow: CRM, KI-Coach Enes, Fahrtenbuch, Telco-Formulare und Team-Backoffice für D2D-Teams. Das große Update kommt bald. Weniger Zettel, mehr Abschlüsse.",
+      imgUrl: IMAGE,
+      tags: ["Visit Flow", "D2D", "Haustürvertrieb", "CRM", "KI-Coach", "Fahrtenbuch", "Glasfaser"],
+      url: SITE,
+    },
+  },
   LoginPage: {
     MetaTags: {
       title: "Anmelden – Visit Flow",
@@ -278,6 +288,60 @@ export const DE: ITranslation = {
         tags: ["Visit Flow", "Straßenliste", "Mentor", "Mentees"],
         url: `${SITE}/mentor-street-list`,
       },
+    },
+  },
+
+  D2dCalculatorSeoPage: {
+    MetaTags: {
+      title: "Provisionsabrechnung Software & D2D-Provisionsrechner 2026 | Visit Flow",
+      description:
+        "Kostenloser D2D-Provisionsrechner & Provisionsabrechnung Software: Berechne Stornoreserve, Struktur-Overrides und Team-ROI für Glasfaser, Solar & Energie.",
+      imgUrl: IMAGE,
+      tags: [
+        "Provisionsabrechnung Software",
+        "Provision Software",
+        "D2D Provisionsrechner",
+        "Stornoreserve berechnen",
+        "Vertriebsprovision abrechnen",
+        "Visit Flow",
+      ],
+      url: `${SITE}/rechner/d2d-provisionsabrechnung`,
+    },
+  },
+
+  D2dIndustryHubSeoPage: {
+    MetaTags: {
+      title: "D2D Software & Direktvertrieb CRM nach Branche (Glasfaser, Solar, Energie) | Visit Flow",
+      description:
+        "Die führende D2D Software für Haustürvertrieb & Direktvertrieb: Speziallösungen für Glasfaser (FTTH), Solar/PV, Strom & Gas, Telekommunikation und Makler.",
+      imgUrl: IMAGE,
+      tags: [
+        "D2D Software",
+        "Direktvertrieb Software",
+        "Haustürvertrieb App",
+        "Glasfaser Vertrieb Software",
+        "Solar D2D CRM",
+        "Visit Flow",
+      ],
+      url: `${SITE}/d2d-vertrieb`,
+    },
+  },
+
+  D2dCityHubSeoPage: {
+    MetaTags: {
+      title: "Vertriebsgebiete optimieren & D2D Gebietsplanung (DACH-Städte-Atlas) | Visit Flow",
+      description:
+        "Vertriebsgebiete optimieren mit System: Haushalts-Potenziale, FTTH-Ausbauquoten, Mehrfamilienhaus-Anteile und D2D-Tourenplanung für 20 Top-Städte in DACH.",
+      imgUrl: IMAGE,
+      tags: [
+        "Vertriebsgebiete optimieren",
+        "Gebietsoptimierung",
+        "D2D Gebietsplanung",
+        "Tourenplanung Außendienst",
+        "Lauflisten App",
+        "Visit Flow",
+      ],
+      url: `${SITE}/gebietsplanung`,
     },
   },
 };

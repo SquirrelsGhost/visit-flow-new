@@ -89,13 +89,18 @@ const POLICY_RULES: readonly PolicyRule[] = [
   { methods: ["GET", "POST", "PUT", "PATCH", "DELETE"], pattern: /^\/api\/settings(\/.*)?$/, policy: apiPerm("settings:*") },
   { methods: ["GET", "POST", "PUT", "PATCH", "DELETE"], pattern: /^\/api\/reports(\/.*)?$/, policy: API_AUTH },
 
-  // ─── 4. Öffentliche Seiten ─────────────────────────────────────────────────
+  // ─── 4. Öffentliche Seiten & SEO/pSEO-Routen ───────────────────────────────
   { methods: ["GET"], pattern: /^\/$/, policy: PAGE_PUBLIC },
   { methods: ["GET"], pattern: /^\/login$/, policy: PAGE_PUBLIC },
   { methods: ["GET"], pattern: /^\/register$/, policy: PAGE_PUBLIC },
   { methods: ["GET"], pattern: /^\/onboarding$/, policy: PAGE_PUBLIC },
   { methods: ["GET"], pattern: /^\/forgot-password$/, policy: PAGE_PUBLIC },
   { methods: ["GET"], pattern: /^\/reset-password$/, policy: PAGE_PUBLIC },
+  { methods: ["GET"], pattern: /^\/rechner\/d2d-provisionsabrechnung$/, policy: PAGE_PUBLIC },
+  { methods: ["GET"], pattern: /^\/d2d-vertrieb(\/[^/]+)?$/, policy: PAGE_PUBLIC },
+  { methods: ["GET"], pattern: /^\/gebietsplanung(\/[^/]+)?$/, policy: PAGE_PUBLIC },
+  { methods: ["GET"], pattern: /^\/sitemap\.xml$/, policy: API_PUBLIC },
+  { methods: ["GET"], pattern: /^\/robots\.txt$/, policy: API_PUBLIC },
 
   // ─── 5. Granular geschützte Admin- & Führungs-Seiten (Capability-Based) ────
   { methods: ["GET"], pattern: /^\/security-dashboard(\/.*)?$/, policy: pagePerm("admin:security") },

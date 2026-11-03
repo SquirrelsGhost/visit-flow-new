@@ -1,9 +1,19 @@
 import type { ITranslation } from "../ITranslation";
 
-const SITE = "https://visit-flow.de";
-const IMAGE = `${SITE}/og/visit-flow.png`;
+const SITE = "https://visit-flow.com";
+const IMAGE = `${SITE}/og.png`;
 
 export const EN: ITranslation = {
+  WebsitePage: {
+    MetaTags: {
+      title: "Visit Flow – CRM, AI coach and back office for door-to-door sales",
+      description:
+        "Visit Flow: CRM, AI coach Enes, mileage log, telco forms and team back office for D2D teams. The big update is coming soon. Less paper, more deals.",
+      imgUrl: IMAGE,
+      tags: ["Visit Flow", "D2D", "door-to-door sales", "CRM", "AI coach", "mileage log"],
+      url: SITE,
+    },
+  },
   LoginPage: {
     MetaTags: {
       title: "Sign in – Visit Flow",
@@ -278,6 +288,57 @@ export const EN: ITranslation = {
         tags: ["Visit Flow", "Street list", "Mentor", "Mentees"],
         url: `${SITE}/mentor-street-list`,
       },
+    },
+  },
+
+  D2dCalculatorSeoPage: {
+    MetaTags: {
+      title: "Commission Settlement Software & D2D Commission Calculator 2026 | Visit Flow",
+      description:
+        "Free D2D commission calculator & automated commission settlement software: calculate clawback reserves, structure overrides and team ROI in real time.",
+      imgUrl: IMAGE,
+      tags: [
+        "Commission settlement software",
+        "D2D commission calculator",
+        "Clawback reserve calculator",
+        "Field sales payroll software",
+        "Visit Flow",
+      ],
+      url: `${SITE}/rechner/d2d-provisionsabrechnung`,
+    },
+  },
+
+  D2dIndustryHubSeoPage: {
+    MetaTags: {
+      title: "D2D Sales Software & Field CRM by Industry (Fiber, Solar, Energy) | Visit Flow",
+      description:
+        "The leading D2D software for door-to-door sales teams: specialized territory mapping, door tracking and commission billing for Fiber, Solar, Energy & Telco.",
+      imgUrl: IMAGE,
+      tags: [
+        "D2D software",
+        "Door to door sales app",
+        "Fiber sales software",
+        "Solar canvassing app",
+        "Visit Flow",
+      ],
+      url: `${SITE}/d2d-vertrieb`,
+    },
+  },
+
+  D2dCityHubSeoPage: {
+    MetaTags: {
+      title: "Sales Territory Optimization & D2D Territory Planning (DACH Atlas) | Visit Flow",
+      description:
+        "Optimize sales territories with data: household counts, FTTH fiber potential, multi-family building ratios and D2D route planning across 20 DACH cities.",
+      imgUrl: IMAGE,
+      tags: [
+        "Sales territory optimization",
+        "Territory mapping software",
+        "D2D route planning",
+        "Canvassing territory atlas",
+        "Visit Flow",
+      ],
+      url: `${SITE}/gebietsplanung`,
     },
   },
 };

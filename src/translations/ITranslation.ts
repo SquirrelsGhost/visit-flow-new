@@ -6,6 +6,11 @@ import type { IMetaTags } from "../services/MetaTagService";
  * Texte in der App selbst liegen weiter in src/texts/.
  */
 export interface ITranslation {
+  /** Öffentliche Website auf "/" */
+  WebsitePage: {
+    MetaTags: IMetaTags;
+  };
+
   LoginPage: {
     MetaTags: IMetaTags;
   };
@@ -105,5 +110,18 @@ export interface ITranslation {
   /** Eine Seite für Admin-, Team- und Mentor-Straßenliste, Meta je Sicht. */
   StreetListPage: {
     MetaTags: Record<"admin" | "struktur" | "mentor", IMetaTags>;
+  };
+
+  /** Öffentliche SEO- & Rechner-Seiten */
+  D2dCalculatorSeoPage: {
+    MetaTags: IMetaTags;
+  };
+
+  D2dIndustryHubSeoPage: {
+    MetaTags: IMetaTags;
+  };
+
+  D2dCityHubSeoPage: {
+    MetaTags: IMetaTags;
   };
 }

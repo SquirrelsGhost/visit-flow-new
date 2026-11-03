@@ -227,6 +227,13 @@ describe("Zero-Trust API-Routen (/api/session/*) & Login-PoW-Header", () => {
     expect(findPolicy("PATCH", "/api/products/p-1/battle-exclude")?.access).toBe("admin:crm");
     expect(findPolicy("GET", "/api/products/team/t-1")?.access).toBe("crm:team");
     expect(findPolicy("GET", "/api/teams/my-team/licenses")?.access).toBe("team:licensing");
+    expect(findPolicy("GET", "/rechner/d2d-provisionsabrechnung")?.access).toBe("public");
+    expect(findPolicy("GET", "/d2d-vertrieb")?.access).toBe("public");
+    expect(findPolicy("GET", "/d2d-vertrieb/glasfaser")?.access).toBe("public");
+    expect(findPolicy("GET", "/gebietsplanung")?.access).toBe("public");
+    expect(findPolicy("GET", "/gebietsplanung/berlin")?.access).toBe("public");
+    expect(findPolicy("GET", "/sitemap.xml")?.access).toBe("public");
+    expect(findPolicy("GET", "/robots.txt")?.access).toBe("public");
   });
 
   it("LoginForm sendet beim Anmelden automatisch PoW-Header, Hardware-Fingerprint und kanonische E-Mail mit", async () => {
