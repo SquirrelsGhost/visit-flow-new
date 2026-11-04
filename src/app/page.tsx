@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { redirect } from "next/navigation";
+import WebsitePage from "../components/website/WebsitePage";
 import { MetaTagService } from "../services/MetaTagService";
 import { TranslationService } from "../services/TranslationService";
 
@@ -9,10 +9,10 @@ export const instant = false;
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await TranslationService.GetUserTranslations();
-  return MetaTagService.CreateMetaTags(t.DashboardPage.MetaTags);
+  return MetaTagService.CreateMetaTags(t.WebsitePage.MetaTags);
 }
 
-/** Die Website kommt später. Bis dahin startet die App direkt in der Laufliste (ohne Anmeldung geht es zum Login). */
+/** Öffentliche Website. Die native App und die installierte Web-App leiten von hier direkt in die App weiter. */
 export default function RootPage() {
-  redirect("/dashboard");
+  return <WebsitePage />;
 }

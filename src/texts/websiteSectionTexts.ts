@@ -1,0 +1,36 @@
+/** Texte der Website-Abschnitte nach der Reise: Stimme aus der Praxis, Preise, Fußzeile. */
+export const websiteSectionTexts = {
+  proof: {
+    kicker: "Aus der Praxis",
+    quote: "Wir haben anfangs mit 10 Beratern gestartet und im ersten Quartal über 220.000 € Umsatz geschrieben! Nach diesem unglaublichen Erfolg haben wir direkt alle 45 Berater von United Leaders auf Visit Flow umgestellt.",
+    name: "Habib Aydin",
+    role: "Teamleiter, United Leaders",
+    crewLabel: "10 Berater im Test, heute 45 Berater",
+    legendTest: "10 im Test",
+    legendNow: "45 heute",
+  },
+  pricing: {
+    kicker: "Preise",
+    title: "Eine Lizenz pro Berater. *Fertig.*",
+    lead: "Jeder Berater bekommt seine eigene Lizenz. Ein Team startest du ab 5 Lizenzen.",
+    perLicense: 65,
+    minLicenses: 5,
+    maxLicenses: 60,
+    unit: "pro Lizenz und Monat",
+    sliderLabel: "Teamgröße",
+    advisors: "Berater",
+    total: "Dein Team im Monat",
+    addOnTitle: "Team-Backoffice",
+    addOnText: "Als Add-on für Teamleiter freischaltbar.",
+    note: "Mindestens 5 Lizenzen pro Team. Das Backoffice kommt als Add-on dazu.",
+  },
+  footer: {
+    about: "Das CRM- und Routen-System für D2D-Vertriebsteams in Glasfaser, Telekommunikation und Energie.",
+    product: "Produkt",
+    legal: "Rechtliches",
+    imprint: "Impressum",
+    privacy: "Datenschutz",
+    copyright: "© 2026 Visit Flow. Alle Rechte vorbehalten.",
+    demo: "Alle App-Ansichten auf dieser Seite zeigen Beispieldaten.",
+  },
+} as const;
