@@ -14,6 +14,9 @@ export default function HoloLabels({ labels }: HoloLabelsProps) {
   };
   return (
     <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden>
+      <HoloLabel ref={bind("ownArea")} tone="#ef4444" title={L.ownArea} />
+      <HoloLabel ref={bind("otherArea")} tone="#8b5cf6" title={L.otherArea} />
+      <HoloLabel ref={bind("me")} tone="#ff4d4d" title={L.me} sub={L.meSub} />
       <HoloLabel ref={bind("walker")} tone="#22c55e" title={L.sale} sub={L.saleSub} />
       <HoloLabel ref={bind("coach")} tone="#c084fc" title="Enes" sub={L.coach} wide />
       <HoloLabel ref={bind("car")} tone="#5eead4" title={L.car} sub={L.carSub} />

@@ -10,6 +10,8 @@ export interface JourneyStation {
   kicker: string;
   title: string;
   text: string;
+  /** Was gerade im Bild passiert, in einfachen Worten. Steht über dem Titel, damit man die Szene versteht. */
+  scene: string;
   chips?: readonly string[];
 }
 
@@ -21,6 +23,10 @@ export const journeyHero = {
   scroll: "Scroll und flieg ins Revier",
 } as const;
 
+export const journeyTexts = {
+  sceneLabel: "Im Bild:",
+} as const;
+
 export const journeyStations: readonly JourneyStation[] = [
   {
     key: "revier",
@@ -29,6 +35,7 @@ export const journeyStations: readonly JourneyStation[] = [
     kicker: "Dein Revier",
     title: "Jede Tür. Jede Straße. *Live.*",
     text: "Die neue Karte zeigt dein Gebiet so, wie du es draußen erlebst: wer wo war, was dort lief, was noch offen ist.",
+    scene: "Rot umrandet ist dein Revier, violett das deines Kollegen.",
     chips: ["Neue Karte mit Lasso", "Straßenlisten", "Reviere im Team"],
   },
   {
@@ -39,6 +46,7 @@ export const journeyStations: readonly JourneyStation[] = [
     kicker: "Für Vertriebler",
     title: "Klingeln. Antippen. *Weiter.*",
     text: "Termin, Abschluss, kein Interesse, nicht angetroffen. Der Status bleibt an der Tür, für dich und dein Team.",
+    scene: "Der rote Punkt bist du. Jede besuchte Tür leuchtet in ihrer Farbe.",
   },
   {
     key: "sale",
@@ -48,6 +56,7 @@ export const journeyStations: readonly JourneyStation[] = [
     kicker: "Eingebautes CRM",
     title: "Verkauf an der Tür. *Auftrag im CRM.*",
     text: "Jeder Verkauf wird von allein zum Auftrag. Stornoquote live, Vertragsübernahme am Handy unterschreiben, DSGVO-konform.",
+    scene: "Grüner Lichtstrahl heißt Abschluss. Er landet sofort als Auftrag im CRM.",
     chips: ["CRM", "Telco-Formulare", "Provisionssimulator"],
   },
   {
@@ -58,6 +67,7 @@ export const journeyStations: readonly JourneyStation[] = [
     kicker: "KI-Coach",
     title: "Enes geht *mit dir* raus.",
     text: "Er kennt deine Türen und Zahlen, merkt sich, was dich weiterbringt, und öffnet jede Seite auf Zuruf. Kundennamen bekommt er nie.",
+    scene: "Die violette Kugel an deiner Seite ist Enes, dein KI-Coach.",
     chips: ["Mit Gedächtnis", "Spracheingabe", "Ja, mach"],
   },
   {
@@ -68,6 +78,7 @@ export const journeyStations: readonly JourneyStation[] = [
     kicker: "Für Teamleiter",
     title: "Dein Team. *Ein Blick.*",
     text: "Im Team-Backoffice prüfst du jeden Sale und fängst Stornos früh ab. Dazu Team-Übersicht, Teamleistung und Battles mit Duellen und Streaks.",
+    scene: "Die farbigen Punkte sind deine Kollegen. Ihre Türen leuchten live mit.",
     chips: ["Team-Backoffice · Add-on", "Teamleistung", "Team-Battles"],
   },
   {
@@ -78,6 +89,7 @@ export const journeyStations: readonly JourneyStation[] = [
     kicker: "Fahrtenbuch",
     title: "Jeder Kilometer. *Sauber fürs Amt.*",
     text: "Die Fahrt kommt als Vorschlag aus deinem Tag. Der Finanzamt-Check findet Lücken, der Export geht als PDF oder CSV.",
+    scene: "Deine Fahrt ins Revier zeichnet sich als Spur. Das Fahrtenbuch schreibt mit.",
   },
   {
     key: "shield",
@@ -87,6 +99,7 @@ export const journeyStations: readonly JourneyStation[] = [
     kicker: "Für Admins",
     title: "Alles im Griff. *Alles geschützt.*",
     text: "Security-Dashboard, CRM-Übersicht aller Verkäufe und auslaufende Tarife. Kundendaten bleiben, wo sie hingehören.",
+    scene: "Die grüne Kuppel steht für den Schutz aller Daten im Revier.",
     chips: ["Security-Dashboard", "CRM-Übersicht", "Auslaufende Tarife"],
   },
 ];
@@ -101,7 +114,7 @@ export const journeyFinale = {
   login: "Anmelden",
 } as const;
 
-/** Schwebende Beschriftungen an Läufer, Enes, Kollegen, Auto und Kuppel. */
+/** Schwebende Beschriftungen an Läufer, Revieren, Enes, Kollegen, Auto und Kuppel. */
 export const journeyLabels = {
   sale: "Auftrag angelegt",
   saleSub: "Glasfaser 500 · im CRM",
@@ -110,6 +123,10 @@ export const journeyLabels = {
   carSub: "Vorschlag aus deinem Tag",
   shield: "Geschützt",
   team: ["Duell läuft", "Sale bestätigt", "Neue Serie"],
+  me: "Du",
+  meSub: "von Tür zu Tür",
+  ownArea: "Dein Revier",
+  otherArea: "Revier vom Kollegen",
   legend: [
     { label: "Abschluss", color: "#22c55e" },
     { label: "Termin", color: "#3b82f6" },

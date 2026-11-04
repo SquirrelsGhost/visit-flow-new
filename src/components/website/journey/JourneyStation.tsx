@@ -1,8 +1,9 @@
 // Blendet mit dem Scrollfortschritt ein und aus: braucht den Browser
 "use client";
 
+import { Eye } from "lucide-react";
 import { motion, useTransform, type MotionValue } from "motion/react";
-import type { JourneyStation as Station } from "../../../texts/websiteJourneyTexts";
+import { journeyTexts, type JourneyStation as Station } from "../../../texts/websiteJourneyTexts";
 import AccentText from "../ui/AccentText";
 import DoorLegend from "./DoorLegend";
 
@@ -40,7 +41,14 @@ export default function JourneyStation({ station, progress }: JourneyStationProp
         <span className="h-px w-8 bg-white/25" />
         {station.kicker}
       </p>
-      <h2 className="mt-5 text-balance font-[family-name:var(--vfw-display)] text-[clamp(2.4rem,5.4vw,4.6rem)] font-bold leading-[0.98] tracking-[-0.045em] text-white">
+      <p className="mt-4 inline-flex max-w-md items-start gap-2 rounded-xl border border-white/10 bg-white/[0.06] px-3 py-2 text-[13px] leading-snug text-white/80">
+        <Eye className="mt-px size-4 shrink-0 text-[#ff6b6b]" aria-hidden />
+        <span>
+          <span className="font-semibold text-white">{journeyTexts.sceneLabel} </span>
+          {station.scene}
+        </span>
+      </p>
+      <h2 className="mt-4 text-balance font-[family-name:var(--vfw-display)] text-[clamp(2.4rem,5.4vw,4.6rem)] font-bold leading-[0.98] tracking-[-0.045em] text-white">
         <AccentText text={station.title} />
       </h2>
       <p className="mt-5 max-w-md text-pretty text-[17px] leading-relaxed text-white/70">{station.text}</p>

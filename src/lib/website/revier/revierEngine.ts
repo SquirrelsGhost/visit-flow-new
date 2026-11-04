@@ -2,6 +2,7 @@ import * as THREE from "three";
 import { cameraAt, STILL_POSE } from "./cameraPath";
 import type { DoorStatus } from "./revierData";
 import { stateAt } from "./revierStates";
+import { AREA_SHAPES } from "./revierWorld";
 import { createCity } from "./scene/createCity";
 import { createCompass } from "./scene/createCompass";
 import { createDoors } from "./scene/createDoors";
@@ -13,7 +14,7 @@ import { createWalker } from "./scene/createWalker";
  * Motor der Reise: baut die Szene, folgt weich dem Scrollfortschritt und meldet,
  * wo die schwebenden Beschriftungen auf dem Bildschirm stehen und welche Türen gerade aufleuchten.
  */
-export type AnchorKey = "walker" | "coach" | "car" | "shield" | "team0" | "team1" | "team2";
+export type AnchorKey = "walker" | "me" | "ownArea" | "otherArea" | "coach" | "car" | "shield" | "team0" | "team1" | "team2";
 export type ScreenAnchors = Partial<Record<AnchorKey, { x: number; y: number; on: boolean }>>;
 
 export interface EngineOptions {
@@ -96,6 +97,15 @@ function createQualityGovernor(apply: (step: (typeof QUALITY_STEPS)[number]) => 
   };
 }
 
+/** Mitte der beiden Reviere (eigenes und das des Kollegen) als Anker für ihre Beschriftung. */
+function areaCenter(own: boolean): THREE.Vector3 {
+  const pts = AREA_SHAPES.find((a) => a.own === own)?.points ?? [[0, 0]];
+  const x = pts.reduce((sum, [px]) => sum + px, 0) / pts.length;
+  const z = pts.reduce((sum, [, pz]) => sum + pz, 0) / pts.length;
+  return new THREE.Vector3(x, 1.5, z);
+}
+const AREA_ANCHORS = { own: areaCenter(true), other: areaCenter(false) };
+
 function smoothstep(a: number, b: number, x: number): number {
   const k = Math.min(Math.max((x - a) / (b - a), 0), 1);
   return k * k * (3 - 2 * k);
@@ -175,6 +185,9 @@ export function createRevierEngine(canvas: HTMLCanvasElement, opts: EngineOption
 
     opts.onFrame({
       walker: toScreen(walker.anchors.walker, s.saleLabel),
+      me: toScreen(walker.anchors.walker, s.meLabel),
+      ownArea: toScreen(AREA_ANCHORS.own, s.areaLabel),
+      otherArea: toScreen(AREA_ANCHORS.other, s.areaLabel),
       coach: toScreen(walker.anchors.coach, s.coach > 0.5 && !s.teamLabel),
       // Nur auf der Fahrt: nicht mehr im Finale, wenn der Kompass zurückkommt
       car: toScreen(extras.anchors.car, s.drive > 0.15 && s.shield < 0.1 && s.compass < 0.01),

@@ -13,6 +13,10 @@ export interface RevierState {
   showWalker: number;
   saleLabel: boolean;
   teamLabel: boolean;
+  /** "Du"-Marke am Läufer, solange die Station "Klingeln. Antippen." läuft. */
+  meLabel: boolean;
+  /** Marken an den beiden Revieren in der Station "Dein Revier". */
+  areaLabel: boolean;
   coach: number;
   team: number;
   drive: number;
@@ -46,6 +50,8 @@ export function stateAt(t: number): RevierState {
     walker: pos,
     visited: walked,
     teamLabel: teamK > 0.15 && teamK < 1,
+    meLabel: t >= PHASE.walk[0] && wk < WALK_BEATS.map[1],
+    areaLabel: dive > 0.35 && t < PHASE.walk[0],
     saleLabel: t >= PHASE.walk[0] && wk >= WALK_BEATS.sale[0] && wk < WALK_BEATS.sale[1],
     showWalker: clamp((dive - 0.6) / 0.4) * (1 - finale),
     coach: coachIn * (1 - clamp(teamK * 2)),
