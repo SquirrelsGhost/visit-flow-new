@@ -43,8 +43,9 @@ function orbit(p: Pose, k: number, amount: number): Pose {
 }
 
 export function cameraAt(t: number): Pose {
-  if (t < PHASE.compass[1]) return orbit(TOP, within(t, PHASE.compass), 0.4);
-  if (t < PHASE.dive[1]) return blend(orbit(TOP, 1, 0.4), follow(0), within(t, PHASE.dive));
+  // Von oben steht das Logo still: ein Kreisen um den senkrechten Blick dreht das ganze Bild (Logo wackelt links/rechts)
+  if (t < PHASE.compass[1]) return TOP;
+  if (t < PHASE.dive[1]) return blend(TOP, follow(0), within(t, PHASE.dive));
   if (t < PHASE.walk[1]) return follow(within(t, PHASE.walk));
   if (t < PHASE.team[1]) return blend(follow(1), orbit(OVERVIEW, within(t, PHASE.team), 0.5), Math.min(within(t, PHASE.team) * 1.6, 1));
   if (t < PHASE.drive[1]) return blend(orbit(OVERVIEW, 1, 0.5), DRIVE, within(t, PHASE.drive));

@@ -43,12 +43,12 @@ const FOLLOW = 0.085;
  * spürbar unter 60 Bildern pro Sekunde bleibt. Es geht nur abwärts: eine Stufe, die einmal zu langsam war, kommt nicht
  * wieder. Sonst pendelt die Qualität hin und her, und jeder Wechsel legt Speicher neu an (selbst ein kurzes Stocken).
  */
+// Nie unter die echte Bildschirmauflösung (siehe MIN_PIXEL_RATIO in createStage) und nie ohne Kantenglättung:
+// sonst wirkt das stehende Bild nach dem Scrollen verpixelt
 const QUALITY_STEPS = [
   { scale: 1, samples: 4 },
   { scale: 0.85, samples: 4 },
-  { scale: 0.75, samples: 2 },
-  { scale: 0.62, samples: 2 },
-  { scale: 0.5, samples: 0 },
+  { scale: 0.85, samples: 2 },
 ] as const;
 /** ~54 fps: darunter wirkt es auf einem 60-Hz-Bildschirm nicht mehr flüssig. */
 const SLOW_MS = 18.5;
@@ -96,6 +96,11 @@ function createQualityGovernor(apply: (step: (typeof QUALITY_STEPS)[number]) => 
   };
 }
 
+function smoothstep(a: number, b: number, x: number): number {
+  const k = Math.min(Math.max((x - a) / (b - a), 0), 1);
+  return k * k * (3 - 2 * k);
+}
+
 export function createRevierEngine(canvas: HTMLCanvasElement, opts: EngineOptions): RevierEngine {
   const stage = createStage(canvas, opts.lite);
   const city = createCity();
@@ -122,6 +127,7 @@ export function createRevierEngine(canvas: HTMLCanvasElement, opts: EngineOption
   );
   const v = new THREE.Vector3();
   const look = new THREE.Vector3();
+  const dir = new THREE.Vector3();
 
   // Größe kommt aus dem Cache der Bühne: canvas.clientWidth je Frame würde nach den Stil-Schreibvorgängen ein Layout erzwingen
   const toScreen = (p: THREE.Vector3, on: boolean) => {
@@ -149,7 +155,13 @@ export function createRevierEngine(canvas: HTMLCanvasElement, opts: EngineOption
     const s = stateAt(shown);
     const pose = opts.reduce ? STILL_POSE : cameraAt(shown);
     stage.camera.position.set(...pose.pos);
-    stage.camera.lookAt(look.set(...pose.look));
+    look.set(...pose.look);
+    // Fast senkrechter Blick nach unten: "oben" im Bild über Norden (-z) festlegen statt über die Welt-Hochachse.
+    // Sonst bestimmt der winzige waagerechte Versatz die Drehung des Bildes, und das Logo dreht sich kurz vor dem Ziel weg und zurück
+    dir.subVectors(look, stage.camera.position).normalize();
+    const steep = smoothstep(0.8, 0.97, -dir.y);
+    stage.camera.up.set(0, 1 - steep, -steep).normalize();
+    stage.camera.lookAt(look);
 
     city.rise(opts.reduce ? Math.max(s.rise, 1 - s.compass) : s.rise);
     compass.set(opts.reduce ? 0 : s.compass, s.spread, s.spin);

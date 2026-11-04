@@ -28,7 +28,8 @@ const NIGHT = "#05060b";
 /** Mit Leuchten (Desktop) rendert die Szene in ein 4x-Multisampling-Ziel: mehr als 1.5 bringt dort kaum Schärfe, kostet aber viel. */
 const MAX_PIXEL_RATIO_GLOW = 1.5;
 const MAX_PIXEL_RATIO_LITE = 2;
-const MIN_PIXEL_RATIO = 0.75;
+/** Untergrenze der adaptiven Qualität: echte Bildschirmauflösung (1), darunter sieht man Pixel. */
+const MIN_PIXEL_RATIO = 1;
 
 export function createStage(canvas: HTMLCanvasElement, lite: boolean): Stage {
   // Mit Leuchten malt der Bildweg selbst glatt (Multisampling-Ziel); ein zweiter Multisampling-Puffer der Leinwand wäre verschwendet
@@ -55,7 +56,10 @@ export function createStage(canvas: HTMLCanvasElement, lite: boolean): Stage {
   const maxRatio = lite ? MAX_PIXEL_RATIO_LITE : MAX_PIXEL_RATIO_GLOW;
   let quality = 1;
   const size = { width: 0, height: 0 };
-  const pixelRatio = () => Math.max(MIN_PIXEL_RATIO, Math.min(window.devicePixelRatio || 1, maxRatio) * quality);
+  const pixelRatio = () => {
+    const full = Math.min(window.devicePixelRatio || 1, maxRatio);
+    return Math.max(Math.min(MIN_PIXEL_RATIO, full), full * quality);
+  };
 
   const resize = () => {
     const { clientWidth: w, clientHeight: h } = canvas;
