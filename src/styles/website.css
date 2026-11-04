@@ -38,6 +38,21 @@
   animation: vfwDrift 26s ease-in-out infinite;
   will-change: transform;
 }
+/* Ausgeblendete Stimmungen nicht weiter animieren; nach der Überblendung ganz aus dem Bild nehmen */
+.vfw-light[data-active="false"] {
+  animation-play-state: paused;
+  visibility: hidden;
+  transition:
+    opacity 1.4s cubic-bezier(0.22, 1, 0.36, 1),
+    visibility 0s linear 1.4s;
+}
+/* Füllt die 3D-Szene den Bildschirm, liegt der Lichthintergrund unsichtbar dahinter: ganz ruhen lassen */
+.vfw-root[data-stage="full"] .vfw-backdrop {
+  visibility: hidden;
+}
+.vfw-root[data-stage="full"] .vfw-light {
+  animation-play-state: paused;
+}
 .vfw-grid {
   position: absolute;
   inset: 0;
@@ -47,10 +62,16 @@
   background-size: 64px 64px;
   mask-image: radial-gradient(ellipse 70% 60% at 50% 30%, #000 20%, transparent 75%);
 }
+/* Zeiger-Licht: feste Lichtscheibe, die per transform dem Zeiger folgt (kein Neuzeichnen des Verlaufs je Mausbewegung) */
 .vfw-cursor {
   position: absolute;
-  inset: 0;
-  background: radial-gradient(520px circle at var(--mx, 50%) var(--my, -40%), rgba(255, 255, 255, 0.06), transparent 60%);
+  left: 0;
+  top: 0;
+  width: 1040px;
+  height: 1040px;
+  transform: translate3d(calc(50vw - 520px), calc(-40vh - 520px), 0);
+  background: radial-gradient(520px circle at 50% 50%, rgba(255, 255, 255, 0.06), transparent 60%);
+  will-change: transform;
 }
 .vfw-grain {
   position: absolute;
@@ -230,10 +251,18 @@
 /* Schwebende Beschriftungen im 3D-Viertel */
 .vfw-holo {
   opacity: 0;
-  transition: opacity 0.45s ease;
+  visibility: hidden;
+  /* visibility erst nach der Ausblendung: unsichtbare Glasflächen (backdrop-filter) kosten sonst weiter jeden Frame */
+  transition:
+    opacity 0.45s ease,
+    visibility 0s linear 0.45s;
 }
 .vfw-holo[data-on="true"] {
   opacity: 1;
+  visibility: visible;
+  transition:
+    opacity 0.45s ease,
+    visibility 0s;
 }
 .vfw-holo > div {
   transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1);

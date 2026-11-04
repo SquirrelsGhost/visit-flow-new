@@ -1,10 +1,11 @@
 import { useEffect, type RefObject } from "react";
 
 /**
- * Schreibt die Zeigerposition als CSS-Variablen (--mx, --my in px, --px, --py von -1 bis 1) auf ein Element.
- * Nur mit Maus und ohne "Bewegung reduzieren"; ein Frame pro Bewegung.
+ * Lässt ein Licht-Element (zentrierte Scheibe, siehe .vfw-cursor) dem Zeiger im Fenster folgen.
+ * Nur per transform auf diesem einen Element: keine CSS-Variablen auf dem Wurzelelement, die bei jeder
+ * Mausbewegung die Stile der ganzen Seite neu berechnen ließen. Nur mit Maus und ohne "Bewegung reduzieren"; ein Frame pro Bewegung.
  */
-export function usePointerGlow(ref: RefObject<HTMLElement | null>, scope: "window" | "element" = "element") {
+export function usePointerGlow(ref: RefObject<HTMLElement | null>) {
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
@@ -12,24 +13,24 @@ export function usePointerGlow(ref: RefObject<HTMLElement | null>, scope: "windo
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     if (!fine || reduce) return;
 
+    // Größe einmal lesen: Layout-Abfragen je Mausbewegung vermeiden
+    const half = el.offsetWidth / 2;
     let frame = 0;
+    let x = 0;
+    let y = 0;
     const onMove = (e: PointerEvent) => {
-      cancelAnimationFrame(frame);
+      x = e.clientX;
+      y = e.clientY;
+      if (frame) return;
       frame = requestAnimationFrame(() => {
-        const box = scope === "window" ? { left: 0, top: 0, width: innerWidth, height: innerHeight } : el.getBoundingClientRect();
-        const x = e.clientX - box.left;
-        const y = e.clientY - box.top;
-        el.style.setProperty("--mx", `${x}px`);
-        el.style.setProperty("--my", `${y}px`);
-        el.style.setProperty("--px", ((x / box.width) * 2 - 1).toFixed(3));
-        el.style.setProperty("--py", ((y / box.height) * 2 - 1).toFixed(3));
+        frame = 0;
+        el.style.transform = `translate3d(${x - half}px, ${y - half}px, 0)`;
       });
     };
-    const target: Window | HTMLElement = scope === "window" ? window : el;
-    target.addEventListener("pointermove", onMove as EventListener, { passive: true });
+    window.addEventListener("pointermove", onMove, { passive: true });
     return () => {
-      target.removeEventListener("pointermove", onMove as EventListener);
+      window.removeEventListener("pointermove", onMove);
       cancelAnimationFrame(frame);
     };
-  }, [ref, scope]);
+  }, [ref]);
 }

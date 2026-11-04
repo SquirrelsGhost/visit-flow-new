@@ -5,7 +5,8 @@ import { createGlowPipeline } from "./createGlowPipeline";
 /**
  * Bühne: Renderer, Nachthimmel mit Nebel, Kamera und Licht.
  * Desktop mit Leuchten und Multisampling (createGlowPipeline), Handy direkt mit der Kantenglättung des Browsers.
- * Volle Pixeldichte bis 2, damit Logo und Kanten auf jedem Bildschirm scharf bleiben.
+ * Pixeldichte begrenzt (Desktop 1.5, weil das Multisampling dort ohnehin glättet; Handy 2) und
+ * per `setQuality` weiter absenkbar, wenn das Gerät nicht mitkommt.
  */
 export interface Stage {
   renderer: THREE.WebGLRenderer;
@@ -14,17 +15,22 @@ export interface Stage {
   render: () => void;
   /** Passt Auflösung an Größe und Pixeldichte an (auch nach Zoomen oder Wechsel auf einen anderen Bildschirm). */
   resize: () => void;
+  /** Faktor auf die Pixeldichte (1 = volle Qualität). Die adaptive Qualität im Motor senkt ihn bei Ruckeln. */
+  setQuality: (scale: number) => void;
+  /** Aktuelle Größe der Leinwand in CSS-Pixeln, ohne Layout abzufragen. */
+  size: { width: number; height: number };
   dispose: () => void;
 }
 
 const NIGHT = "#05060b";
-const MAX_PIXEL_RATIO = 2;
-
-const pixelRatio = () => Math.min(window.devicePixelRatio || 1, MAX_PIXEL_RATIO);
+/** Mit Leuchten (Desktop) rendert die Szene in ein 4x-Multisampling-Ziel: mehr als 1.5 bringt dort kaum Schärfe, kostet aber viel. */
+const MAX_PIXEL_RATIO_GLOW = 1.5;
+const MAX_PIXEL_RATIO_LITE = 2;
+const MIN_PIXEL_RATIO = 0.75;
 
 export function createStage(canvas: HTMLCanvasElement, lite: boolean): Stage {
-  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: "high-performance", alpha: false });
-  renderer.setPixelRatio(pixelRatio());
+  // Mit Leuchten malt der Bildweg selbst glatt (Multisampling-Ziel); ein zweiter Multisampling-Puffer der Leinwand wäre verschwendet
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: lite, stencil: false, powerPreference: "high-performance", alpha: false });
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.05;
 
@@ -44,10 +50,16 @@ export function createStage(canvas: HTMLCanvasElement, lite: boolean): Stage {
   scene.add(ember);
 
   const glow = lite ? null : createGlowPipeline(renderer, scene, camera);
+  const maxRatio = lite ? MAX_PIXEL_RATIO_LITE : MAX_PIXEL_RATIO_GLOW;
+  let quality = 1;
+  const size = { width: 0, height: 0 };
+  const pixelRatio = () => Math.max(MIN_PIXEL_RATIO, Math.min(window.devicePixelRatio || 1, maxRatio) * quality);
 
   const resize = () => {
     const { clientWidth: w, clientHeight: h } = canvas;
     if (!w || !h) return;
+    size.width = w;
+    size.height = h;
     const ratio = pixelRatio();
     renderer.setPixelRatio(ratio);
     renderer.setSize(w, h, false);
@@ -62,8 +74,14 @@ export function createStage(canvas: HTMLCanvasElement, lite: boolean): Stage {
     renderer,
     scene,
     camera,
+    size,
     render: () => (glow ? glow.render() : renderer.render(scene, camera)),
     resize,
+    setQuality: (scale) => {
+      if (scale === quality) return;
+      quality = scale;
+      resize();
+    },
     dispose: () => {
       glow?.dispose();
       renderer.dispose();

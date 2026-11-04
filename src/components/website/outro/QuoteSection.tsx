@@ -20,7 +20,7 @@ export default function QuoteSection() {
         </p>
         <motion.blockquote
           initial={{ opacity: 0, y: 30, filter: "blur(10px)" }}
-          whileInView={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+          whileInView={{ opacity: 1, y: 0, filter: "blur(0px)", transitionEnd: { filter: "none" } }}
           viewport={{ once: true, amount: 0.4 }}
           transition={{ duration: 1.2, ease: EASE }}
           className="mt-10 text-balance font-[family-name:var(--vfw-serif)] text-[clamp(2rem,4.6vw,4.2rem)] italic leading-[1.08] tracking-[-0.01em] text-white"

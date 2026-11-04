@@ -2,7 +2,6 @@
 "use client";
 
 import { useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
-import { usePointerGlow } from "../../hooks/website/usePointerGlow";
 import { useNativeAppRedirect } from "../../hooks/website/useNativeAppRedirect";
 import { accentFont, displayFont } from "../../lib/website/websiteFonts";
 import { WebsiteContext } from "../../lib/website/websiteContext";
@@ -21,7 +20,6 @@ export default function WebsiteRoot({ children }: WebsiteRootProps) {
   const scroller = useRef<HTMLDivElement>(null);
   const [tone, setTone] = useState<WebsiteTone>("brand");
   const redirecting = useNativeAppRedirect();
-  usePointerGlow(scroller, "window");
   const value = useMemo(() => ({ scroller, tone, setTone }), [tone]);
   const colors = TONES.brand;
 

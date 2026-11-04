@@ -18,7 +18,7 @@ function Rise({ children, delay }: { children: React.ReactNode; delay: number })
     <motion.span
       className="block"
       initial={{ opacity: 0, y: "0.4em", filter: "blur(16px)" }}
-      animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+      animate={{ opacity: 1, y: 0, filter: "blur(0px)", transitionEnd: { filter: "none" } }}
       transition={{ duration: 1.2, ease: EASE, delay }}
     >
       {children}

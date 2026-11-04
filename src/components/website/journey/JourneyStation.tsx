@@ -21,7 +21,12 @@ export default function JourneyStation({ station, progress }: JourneyStationProp
   const { from, to } = station;
   const opacity = useTransform(progress, [from - FADE, from, to - FADE, to], [0, 1, 1, 0]);
   const y = useTransform(progress, [from - FADE, from, to - FADE, to], [40, 0, 0, -40]);
-  const blur = useTransform(progress, [from - FADE, from, to - FADE, to], ["blur(12px)", "blur(0px)", "blur(0px)", "blur(12px)"]);
+  // Unschärfe nur während der Überblendung; in Ruhe "none", damit der große Text keine Filter-Ebene behält
+  const blur = useTransform(progress, (t) => {
+    const k = t < from ? (from - t) / FADE : t > to - FADE ? (t - (to - FADE)) / FADE : 0;
+    const px = Math.min(Math.max(k, 0), 1) * 12;
+    return px < 0.05 ? "none" : `blur(${px.toFixed(2)}px)`;
+  });
   const visibility = useTransform(opacity, (o) => (o < 0.01 ? "hidden" : "visible"));
 
   return (
