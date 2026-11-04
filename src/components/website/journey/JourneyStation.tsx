@@ -36,10 +36,14 @@ export default function JourneyStation({ station, progress }: JourneyStationProp
       className="absolute inset-x-0 bottom-0 px-6 pb-[max(2.5rem,env(safe-area-inset-bottom))] pt-24 sm:px-10 lg:bottom-auto lg:left-[max(2.5rem,calc((100vw-72rem)/2))] lg:right-auto lg:top-1/2 lg:max-w-[34rem] lg:-translate-y-1/2 lg:p-0"
     >
       <div className="absolute inset-0 -z-10 bg-gradient-to-t from-[#05060b] via-[#05060b]/85 to-transparent lg:hidden" />
-      <p className="flex items-center gap-3 text-[12px] font-semibold uppercase tracking-[0.28em] text-white/55">
-        {station.index && <span className="font-[family-name:var(--vfw-display)] text-[#ff6b6b]">{station.index}</span>}
-        <span className="h-px w-8 bg-white/25" />
-        {station.kicker}
+      <p className="flex items-baseline gap-4">
+        <span className="font-[family-name:var(--vfw-display)] text-[clamp(1.6rem,2.6vw,2.2rem)] font-bold tabular-nums tracking-[-0.03em] text-[#ff6b6b]">
+          {station.time}
+        </span>
+        <span className="flex items-center gap-3 text-[12px] font-semibold uppercase tracking-[0.28em] text-white/55">
+          <span className="h-px w-8 bg-white/25" />
+          {station.kicker}
+        </span>
       </p>
       <p className="mt-4 inline-flex max-w-md items-start gap-2 rounded-xl border border-white/10 bg-white/[0.06] px-3 py-2 text-[13px] leading-snug text-white/80">
         <Eye className="mt-px size-4 shrink-0 text-[#ff6b6b]" aria-hidden />

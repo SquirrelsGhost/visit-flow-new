@@ -29,7 +29,7 @@ export default function JourneyRail({ progress }: JourneyRailProps) {
       <div className="absolute bottom-0 right-[3px] top-0 w-px bg-white/10" />
       <motion.div style={{ scaleY: progress }} className="absolute bottom-0 right-[3px] top-0 w-px origin-top bg-gradient-to-b from-red-400 to-violet-400" />
       {journeyStations.map((s) => (
-        <RailDot key={s.key} progress={progress} at={s.from} to={s.to} label={s.kicker} />
+        <RailDot key={s.key} progress={progress} at={s.from} to={s.to} label={s.time.includes(":") ? s.time : s.kicker} />
       ))}
     </div>
   );
