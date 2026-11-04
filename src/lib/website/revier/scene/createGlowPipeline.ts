@@ -8,7 +8,7 @@ import { LOGO_LAYER } from "./compassLogo";
 
 /**
  * Desktop-Bildweg mit Leuchten (Bloom) und echter Kantenglättung:
- * 1. Szene ohne Logo in halber Auflösung → daraus nur das Leuchten (Logo bekommt kein Überstrahlen, es hat sein eigenes).
+ * 1. Szene ohne Logo in einem Drittel der Auflösung → daraus nur das Leuchten (Logo bekommt kein Überstrahlen, es hat sein eigenes).
  * 2. Szene mit Logo in voller Auflösung mit 4-fach Multisampling → glatte Kanten.
  * 3. Beides addieren, dann Tonwerte und Farbraum fürs Display.
  * Kein Schritt malt in einen bereits aufgelösten Multisample-Speicher zurück (das wäre auf manchen Grafikkarten undefiniert).
@@ -16,10 +16,13 @@ import { LOGO_LAYER } from "./compassLogo";
 export interface GlowPipeline {
   render: () => void;
   setSize: (width: number, height: number, ratio: number) => void;
+  /** Multisampling der Hauptszene (4 = volle Qualität, 2 auf schwachen Geräten). */
+  setSamples: (samples: number) => void;
   dispose: () => void;
 }
 
 const MSAA_SAMPLES = 4;
+const GLOW_DIVISOR = 3;
 const BLOOM = { strength: 0.8, radius: 0.55, threshold: 0.28 } as const;
 
 const AddBloomShader = {
@@ -58,11 +61,19 @@ export function createGlowPipeline(renderer: THREE.WebGLRenderer, scene: THREE.S
       camera.layers.enable(LOGO_LAYER);
       composer.render();
     },
+    setSamples: (samples) => {
+      for (const target of [composer.renderTarget1, composer.renderTarget2]) {
+        if (target.samples === samples) continue;
+        target.samples = samples;
+        // three legt den Speicher beim nächsten Zeichnen mit der neuen Sampleanzahl neu an
+        target.dispose();
+      }
+    },
     setSize: (width, height, ratio) => {
       composer.setPixelRatio(ratio);
       composer.setSize(width, height);
-      // Das Leuchten rechnet ohnehin ab halber Auflösung; die Quelle braucht nicht mehr
-      glowSource.setSize(Math.max(1, Math.round((width * ratio) / 2)), Math.max(1, Math.round((height * ratio) / 2)));
+      // Die Quelle des Leuchtens wird ohnehin weichgezeichnet: ein Drittel der Auflösung reicht und spart die zweite Szene fast ganz
+      glowSource.setSize(Math.max(1, Math.round((width * ratio) / GLOW_DIVISOR)), Math.max(1, Math.round((height * ratio) / GLOW_DIVISOR)));
       bloom.setSize(width * ratio, height * ratio);
     },
     dispose: () => {

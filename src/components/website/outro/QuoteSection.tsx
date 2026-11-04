@@ -29,8 +29,7 @@ export default function QuoteSection() {
         </motion.blockquote>
         <div className="mt-12 flex flex-wrap items-end justify-between gap-8">
           <p className="text-white/60">
-            <strong className="block font-[family-name:var(--vfw-display)] text-xl font-semibold text-white">{t.name}</strong>
-            {t.role}
+            <strong className="block font-[family-name:var(--vfw-display)] text-xl font-semibold text-white">{t.role}</strong>
           </p>
           <div role="img" aria-label={t.crewLabel} className="flex max-w-md flex-wrap gap-1.5">
             {Array.from({ length: 45 }, (_, i) => (

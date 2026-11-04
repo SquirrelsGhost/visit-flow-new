@@ -28,6 +28,7 @@ export default function RevierCanvas({ progress, labels }: RevierCanvasProps) {
   const reduce = useReducedMotion() ?? false;
   const { scroller } = useWebsite();
   const [failed, setFailed] = useState(false);
+  const perf = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const el = canvas.current;
@@ -35,6 +36,8 @@ export default function RevierCanvas({ progress, labels }: RevierCanvasProps) {
     const lite = window.matchMedia("(pointer: coarse)").matches || window.innerWidth < 768;
     let lastSound = 0;
     // Letzter geschriebener Stand je Beschriftung: nur Änderungen ins DOM schreiben, ausgeblendete gar nicht bewegen
+    // Leistungsanzeige zum Nachmessen auf echter Hardware: Adresse mit ?perf öffnen
+    const showPerf = new URLSearchParams(window.location.search).has("perf");
     const written: Partial<Record<AnchorKey, { x: number; y: number; on: boolean; offAt: number }>> = {};
     try {
       engine.current = createRevierEngine(el, {
@@ -60,6 +63,14 @@ export default function RevierCanvas({ progress, labels }: RevierCanvasProps) {
             node.style.transform = `translate3d(${x}px, ${y}px, 0)`;
           }
         },
+        onStats: showPerf
+          ? (st) => {
+              if (perf.current) {
+                perf.current.hidden = false;
+                perf.current.textContent = `${st.fps.toFixed(0)} fps · Stufe ${st.level} · DPR ${st.pixelRatio.toFixed(2)} · MSAA ${st.samples}${lite ? " · lite" : ""}`;
+              }
+            }
+          : undefined,
         onDoors: (fresh) => {
           const now = performance.now();
           if (fresh.includes("sale")) siteFeedback("sale");
@@ -92,5 +103,10 @@ export default function RevierCanvas({ progress, labels }: RevierCanvasProps) {
   useMotionValueEvent(progress, "change", (t) => engine.current?.setProgress(t));
 
   if (failed) return <div className="absolute inset-0 bg-[radial-gradient(80%_60%_at_50%_30%,rgba(220,38,38,0.25),transparent_70%)]" aria-hidden />;
-  return <canvas ref={canvas} className="absolute inset-0 h-full w-full" aria-hidden />;
+  return (
+    <>
+      <canvas ref={canvas} className="absolute inset-0 h-full w-full" aria-hidden />
+      <div ref={perf} hidden className="pointer-events-none fixed bottom-3 left-3 z-[60] rounded-md bg-black/70 px-2 py-1 font-mono text-[11px] text-white" />
+    </>
+  );
 }

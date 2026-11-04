@@ -3,7 +3,6 @@ export const websiteSectionTexts = {
   proof: {
     kicker: "Aus der Praxis",
     quote: "Wir haben anfangs mit 10 Beratern gestartet und im ersten Quartal über 220.000 € Umsatz geschrieben! Nach diesem unglaublichen Erfolg haben wir direkt alle 45 Berater von United Leaders auf Visit Flow umgestellt.",
-    name: "Habib Aydin",
     role: "Teamleiter, United Leaders",
     crewLabel: "10 Berater im Test, heute 45 Berater",
     legendTest: "10 im Test",

@@ -21,6 +21,8 @@ export interface EngineOptions {
   reduce: boolean;
   onFrame: (anchors: ScreenAnchors) => void;
   onDoors: (fresh: DoorStatus[]) => void;
+  /** Optional: Leistungswerte etwa zweimal pro Sekunde (Anzeige mit ?perf in der Adresse). */
+  onStats?: (stats: QualityStats) => void;
 }
 
 export interface RevierEngine {
@@ -37,19 +39,33 @@ const DOOR_ANIM_MS = 700;
 const FOLLOW = 0.085;
 
 /**
- * Adaptive Qualität: misst die Bildzeit und senkt die Pixeldichte stufenweise, wenn das Gerät
- * dauerhaft unter ~45 Bildern pro Sekunde bleibt. Hebt sie wieder an, wenn reichlich Luft ist.
+ * Adaptive Qualität: misst die Bildzeit und senkt Pixeldichte und Multisampling stufenweise, sobald das Gerät
+ * spürbar unter 60 Bildern pro Sekunde bleibt. Es geht nur abwärts: eine Stufe, die einmal zu langsam war, kommt nicht
+ * wieder. Sonst pendelt die Qualität hin und her, und jeder Wechsel legt Speicher neu an (selbst ein kurzes Stocken).
  */
-const QUALITY_STEPS = [1, 0.85, 0.7, 0.55];
-const SLOW_MS = 22;
-const FAST_MS = 17.5;
-const WINDOW = 45;
+const QUALITY_STEPS = [
+  { scale: 1, samples: 4 },
+  { scale: 0.85, samples: 4 },
+  { scale: 0.75, samples: 2 },
+  { scale: 0.62, samples: 2 },
+  { scale: 0.5, samples: 0 },
+] as const;
+/** ~54 fps: darunter wirkt es auf einem 60-Hz-Bildschirm nicht mehr flüssig. */
+const SLOW_MS = 18.5;
+const WINDOW = 30;
 
-function createQualityGovernor(lite: boolean, apply: (scale: number) => void) {
+export interface QualityStats {
+  fps: number;
+  level: number;
+  pixelRatio: number;
+  samples: number;
+}
+
+function createQualityGovernor(apply: (step: (typeof QUALITY_STEPS)[number]) => void, report?: (fps: number, level: number) => void) {
   let level = 0;
   let sum = 0;
   let count = 0;
-  let calmWindows = 0;
+  let skipWindows = 1;
   return {
     sample: (dt: number) => {
       // Lange Pausen (Tab im Hintergrund, Ruckler beim Laden) nicht mitzählen
@@ -60,23 +76,22 @@ function createQualityGovernor(lite: boolean, apply: (scale: number) => void) {
       const avg = sum / count;
       sum = 0;
       count = 0;
+      report?.(1000 / avg, level);
+      // Nach jedem Wechsel ein Fenster abwarten: das erste Bild nach dem Neuanlegen ist immer langsam
+      if (skipWindows > 0) {
+        skipWindows -= 1;
+        return;
+      }
       if (avg > SLOW_MS && level < QUALITY_STEPS.length - 1) {
         level += 1;
-        calmWindows = 0;
-        apply(QUALITY_STEPS[level] ?? 1);
-      } else if (avg < FAST_MS && level > 0 && !lite) {
-        // Erst nach mehreren ruhigen Fenstern wieder hoch, damit es nicht hin und her springt
-        calmWindows += 1;
-        if (calmWindows >= 4) {
-          level -= 1;
-          calmWindows = 0;
-          apply(QUALITY_STEPS[level] ?? 1);
-        }
-      } else calmWindows = 0;
+        skipWindows = 1;
+        apply(QUALITY_STEPS[level] ?? QUALITY_STEPS[0]);
+      }
     },
     reset: () => {
       sum = 0;
       count = 0;
+      skipWindows = 1;
     },
   };
 }
@@ -100,7 +115,11 @@ export function createRevierEngine(canvas: HTMLCanvasElement, opts: EngineOption
   let refresh = 1000 / 60;
   let tick = 0;
   let busyUntil = 0;
-  const quality = createQualityGovernor(opts.lite, (scale) => stage.setQuality(scale));
+  const quality = createQualityGovernor(
+    (step) => stage.setQuality(step.scale, step.samples),
+    opts.onStats &&
+      ((fps, level) => opts.onStats?.({ fps, level, pixelRatio: stage.pixelRatio(), samples: QUALITY_STEPS[level]?.samples ?? 4 })),
+  );
   const v = new THREE.Vector3();
   const look = new THREE.Vector3();
 

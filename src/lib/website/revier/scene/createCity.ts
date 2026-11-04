@@ -63,9 +63,11 @@ function buildAreas(): THREE.Group {
   return group;
 }
 
+// Boden: fast schwarz und matt, deshalb Lambert statt PBR. Er füllt den halben Bildschirm und rechnet alle Punktlichter;
+// das günstigere Licht-Modell spart dort am meisten, ohne sichtbaren Unterschied
 function buildGround(): THREE.Group {
   const group = new THREE.Group();
-  const plane = new THREE.Mesh(new THREE.PlaneGeometry(900, 900).rotateX(-Math.PI / 2), new THREE.MeshStandardMaterial({ color: "#07080f", roughness: 0.9 }));
+  const plane = new THREE.Mesh(new THREE.PlaneGeometry(900, 900).rotateX(-Math.PI / 2), new THREE.MeshLambertMaterial({ color: "#07080f" }));
   group.add(plane);
   const grid = new THREE.GridHelper(400, 100, "#1c2033", "#11131f");
   grid.position.y = 0.01;

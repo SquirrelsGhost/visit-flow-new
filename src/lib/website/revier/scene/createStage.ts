@@ -15,10 +15,12 @@ export interface Stage {
   render: () => void;
   /** Passt Auflösung an Größe und Pixeldichte an (auch nach Zoomen oder Wechsel auf einen anderen Bildschirm). */
   resize: () => void;
-  /** Faktor auf die Pixeldichte (1 = volle Qualität). Die adaptive Qualität im Motor senkt ihn bei Ruckeln. */
-  setQuality: (scale: number) => void;
+  /** Faktor auf die Pixeldichte (1 = volle Qualität) und Multisampling. Die adaptive Qualität im Motor senkt beides bei Ruckeln. */
+  setQuality: (scale: number, samples: number) => void;
   /** Aktuelle Größe der Leinwand in CSS-Pixeln, ohne Layout abzufragen. */
   size: { width: number; height: number };
+  /** Aktuelle effektive Pixeldichte (für die Leistungsanzeige). */
+  pixelRatio: () => number;
   dispose: () => void;
 }
 
@@ -77,7 +79,9 @@ export function createStage(canvas: HTMLCanvasElement, lite: boolean): Stage {
     size,
     render: () => (glow ? glow.render() : renderer.render(scene, camera)),
     resize,
-    setQuality: (scale) => {
+    pixelRatio,
+    setQuality: (scale, samples) => {
+      glow?.setSamples(samples);
       if (scale === quality) return;
       quality = scale;
       resize();
