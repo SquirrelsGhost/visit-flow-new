@@ -33,6 +33,7 @@ const POLICY_RULES: readonly PolicyRule[] = [
   { methods: ["GET"], pattern: /^\/api\/system-status$/, policy: API_PUBLIC },
   { methods: ["POST"], pattern: /^\/api\/consent$/, policy: API_PUBLIC },
   { methods: ["GET"], pattern: /^\/api\/consent$/, policy: apiPerm("admin:security") },
+  { methods: ["GET", "POST"], pattern: /^\/api\/waitlist$/, policy: API_PUBLIC },
   { methods: ["GET", "POST", "DELETE"], pattern: /^\/api\/session$/, policy: API_PUBLIC },
   { methods: ["POST"], pattern: /^\/api\/auth\/login$/, policy: API_PUBLIC },
   { methods: ["POST"], pattern: /^\/api\/auth\/logout$/, policy: API_PUBLIC },

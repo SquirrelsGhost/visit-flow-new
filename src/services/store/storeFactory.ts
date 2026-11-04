@@ -32,7 +32,8 @@ export type CollectionName =
   | "streets-assignments"
   | "expiring-contracts"
   | "email-reports"
-  | "whitelist";
+  | "whitelist"
+  | "waitlist";
 
 /**
  * Standard-Verzeichnis außerhalb von `process.cwd()` im Dev-Modus (`os.tmpdir()`),

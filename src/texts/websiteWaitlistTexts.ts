@@ -1,0 +1,26 @@
+/** Texte der Warteliste im Finale der Website. */
+export const waitlistTexts = {
+  label: "Warteliste für das große Update",
+  emailPlaceholder: "deine@email.de",
+  emailLabel: "E-Mail-Adresse",
+  roles: { vertriebler: "Ich bin Vertriebler", teamleiter: "Ich leite ein Team" },
+  roleLabel: "Deine Rolle",
+  submit: "Platz sichern",
+  sending: "Einen Moment …",
+  consentBefore: "Ihr dürft mich zum Start per E-Mail informieren. Abmelden geht jederzeit. Mehr in der ",
+  consentLink: "Datenschutzerklärung",
+  consentAfter: ".",
+  countBefore: "Schon ",
+  countAfter: " auf der Warteliste",
+  doneKicker: "Du bist dabei",
+  donePlace: "Platz",
+  doneText: "Wir melden uns, sobald das Update startet. Wer früher dran ist, ist früher drin.",
+  alreadyText: "Du stehst schon auf der Liste. Dein Platz bleibt dir.",
+  errors: {
+    email: "Bitte gib eine gültige E-Mail-Adresse ein.",
+    consent: "Bitte bestätige kurz, dass wir dir schreiben dürfen.",
+    role: "Bitte wähle deine Rolle.",
+    rate: "Zu viele Versuche. Probier es in ein paar Minuten nochmal.",
+    other: "Das hat gerade nicht geklappt. Probier es gleich nochmal.",
+  },
+} as const;

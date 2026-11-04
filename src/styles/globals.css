@@ -7,6 +7,7 @@
 @import "./battle.css";
 @import "./abrechnung.css";
 @import "./glass.css";
+@import "./website.css";
 
 /* Dark Mode wie in v1 über die Klasse .dark auf <html> */
 @custom-variant dark (&:where(.dark, .dark *));

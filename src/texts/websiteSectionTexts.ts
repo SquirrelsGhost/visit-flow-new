@@ -1,0 +1,40 @@
+/** Texte der Website-Abschnitte nach der Reise: Vorher/Nachher, Preise, Fußzeile. */
+export const websiteSectionTexts = {
+  proof: {
+    kicker: "Vorher / Nachher",
+    title: "Dein Tag. *Ohne Zettel.*",
+    before: "Ohne Visit Flow",
+    after: "Mit Visit Flow",
+    rows: [
+      { before: "Strichliste auf Papier", after: "Status per Tipp an der Tür" },
+      { before: "Abends Aufträge abtippen", after: "Auftrag landet sofort im CRM" },
+      { before: "Fahrtenbuch am Monatsende nachbauen", after: "Fahrten kommen als Vorschlag" },
+      { before: "Zahlen per WhatsApp einsammeln", after: "Team live auf einen Blick" },
+      { before: "Allein im Nachmittagstief", after: "Enes schlägt die nächste Straße vor" },
+    ],
+  },
+  pricing: {
+    kicker: "Preise",
+    title: "Eine Lizenz pro Berater. *Fertig.*",
+    lead: "Jeder Berater bekommt seine eigene Lizenz. Ein Team startest du ab 5 Lizenzen.",
+    perLicense: 65,
+    minLicenses: 5,
+    maxLicenses: 60,
+    unit: "pro Lizenz und Monat",
+    sliderLabel: "Teamgröße",
+    advisors: "Berater",
+    total: "Dein Team im Monat",
+    addOnTitle: "Team-Backoffice",
+    addOnText: "Als Add-on für Teamleiter freischaltbar.",
+    note: "Mindestens 5 Lizenzen pro Team. Das Backoffice kommt als Add-on dazu.",
+  },
+  footer: {
+    about: "Das CRM- und Routen-System für D2D-Vertriebsteams in Glasfaser, Telekommunikation und Energie.",
+    product: "Produkt",
+    legal: "Rechtliches",
+    imprint: "Impressum",
+    privacy: "Datenschutz",
+    copyright: "© 2026 Visit Flow. Alle Rechte vorbehalten.",
+    demo: "Alle App-Ansichten auf dieser Seite zeigen Beispieldaten.",
+  },
+} as const;
