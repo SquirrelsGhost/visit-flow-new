@@ -10,7 +10,7 @@ export const websiteTexts = {
     home: "Visit Flow Startseite",
     links: [
       { href: "#funktionen", label: "Die Reise" },
-      { href: "#stimme", label: "Praxis" },
+      { href: "#stimme", label: "Vorher/Nachher" },
       { href: "#preise", label: "Preise" },
     ],
     login: "Anmelden",

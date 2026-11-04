@@ -1,12 +1,17 @@
-/** Texte der Website-Abschnitte nach der Reise: Stimme aus der Praxis, Preise, Fußzeile. */
+/** Texte der Website-Abschnitte nach der Reise: Vorher/Nachher, Preise, Fußzeile. */
 export const websiteSectionTexts = {
   proof: {
-    kicker: "Aus der Praxis",
-    quote: "Wir haben anfangs mit 10 Beratern gestartet und im ersten Quartal über 220.000 € Umsatz geschrieben! Nach diesem unglaublichen Erfolg haben wir direkt alle 45 Berater von United Leaders auf Visit Flow umgestellt.",
-    role: "Teamleiter, United Leaders",
-    crewLabel: "10 Berater im Test, heute 45 Berater",
-    legendTest: "10 im Test",
-    legendNow: "45 heute",
+    kicker: "Vorher / Nachher",
+    title: "Dein Tag. *Ohne Zettel.*",
+    before: "Ohne Visit Flow",
+    after: "Mit Visit Flow",
+    rows: [
+      { before: "Strichliste auf Papier", after: "Status per Tipp an der Tür" },
+      { before: "Abends Aufträge abtippen", after: "Auftrag landet sofort im CRM" },
+      { before: "Fahrtenbuch am Monatsende nachbauen", after: "Fahrten kommen als Vorschlag" },
+      { before: "Zahlen per WhatsApp einsammeln", after: "Team live auf einen Blick" },
+      { before: "Allein im Nachmittagstief", after: "Enes schlägt die nächste Straße vor" },
+    ],
   },
   pricing: {
     kicker: "Preise",
