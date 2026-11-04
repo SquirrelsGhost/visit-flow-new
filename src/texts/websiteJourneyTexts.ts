@@ -110,7 +110,7 @@ export const journeyFinale = {
   from: 0.88,
   title: "Bald für alle.",
   accent: "*Bleib dran.*",
-  lead: "So sieht dein Tag mit dem großen Update aus. Es ist fast fertig. Du nutzt Visit Flow schon? Dann bekommst du alles automatisch.",
+  lead: "So sieht dein Tag mit dem großen Update aus. Sichere dir jetzt deinen Platz. Du nutzt Visit Flow schon? Dann bekommst du alles automatisch.",
   soon: "Demnächst",
   live: "Team starten",
   login: "Anmelden",

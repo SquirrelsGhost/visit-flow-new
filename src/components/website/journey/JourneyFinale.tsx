@@ -1,14 +1,15 @@
 // Blendet am Ende der Reise ein: braucht den Browser
 "use client";
 
-import { Clock3, LogIn, Rocket } from "lucide-react";
+import { LogIn, Rocket } from "lucide-react";
 import { motion, useTransform, type MotionValue } from "motion/react";
 import { WEBSITE_LAUNCHED, WEBSITE_LINKS } from "../../../lib/website/websiteLinks";
 import { journeyFinale as t } from "../../../texts/websiteJourneyTexts";
 import AccentText from "../ui/AccentText";
 import CtaButton from "../ui/CtaButton";
+import WaitlistForm from "./WaitlistForm";
 
-/** Ende der Reise: Der Kompass liegt wieder oben, darunter "Bald für alle. Bleib dran." und die beiden Wege weiter. */
+/** Ende der Reise: Der Kompass liegt wieder oben, darunter "Bald für alle. Bleib dran." und die Warteliste (nach dem Start: Team starten / Anmelden). */
 interface JourneyFinaleProps {
   progress: MotionValue<number>;
 }
@@ -30,20 +31,18 @@ export default function JourneyFinale({ progress }: JourneyFinaleProps) {
         </span>
       </h2>
       <p className="mx-auto mt-6 max-w-xl text-pretty text-lg text-white/65">{t.lead}</p>
-      <div className="mt-8 flex flex-wrap justify-center gap-3">
-        {WEBSITE_LAUNCHED ? (
+      {WEBSITE_LAUNCHED ? (
+        <div className="mt-8 flex flex-wrap justify-center gap-3">
           <CtaButton href={WEBSITE_LINKS.onboarding} size="lg">
             {t.live} <Rocket className="size-5" />
           </CtaButton>
-        ) : (
-          <CtaButton href={WEBSITE_LINKS.features} size="lg" disabled>
-            {t.soon} <Clock3 className="size-5" />
+          <CtaButton href={WEBSITE_LINKS.login} size="lg" variant="glass">
+            {t.login} <LogIn className="size-5" />
           </CtaButton>
-        )}
-        <CtaButton href={WEBSITE_LINKS.login} size="lg" variant="glass">
-          {t.login} <LogIn className="size-5" />
-        </CtaButton>
-      </div>
+        </div>
+      ) : (
+        <WaitlistForm />
+      )}
     </motion.div>
   );
 }
